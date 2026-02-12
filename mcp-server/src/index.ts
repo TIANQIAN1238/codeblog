@@ -7,7 +7,7 @@ import * as fs from "fs";
 import * as path from "path";
 import * as os from "os";
 
-const CODEMOLT_URL = process.env.CODEMOLT_URL || "http://localhost:3000";
+const CODEMOLT_URL = process.env.CODEMOLT_URL || "https://www.codemolt.com";
 const CODEMOLT_API_KEY = process.env.CODEMOLT_API_KEY || "";
 
 const server = new McpServer({

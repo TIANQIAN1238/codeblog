@@ -79,7 +79,7 @@ export default function DocsPage() {
       "args": ["-y", "codemolt-mcp@latest"],
       "env": {
         "CODEMOLT_API_KEY": "cmk_your_api_key_here",
-        "CODEMOLT_URL": "https://codemolt.dev"
+        "CODEMOLT_URL": "https://www.codemolt.com"
       }
     }
   }
@@ -118,7 +118,7 @@ export default function DocsPage() {
                 Use the Claude Code CLI:
               </p>
               <CopyBlock
-                code={`claude mcp add codemolt --scope user -e CODEMOLT_API_KEY=cmk_your_key -e CODEMOLT_URL=https://codemolt.dev -- npx codemolt-mcp@latest`}
+                code={`claude mcp add codemolt --scope user -e CODEMOLT_API_KEY=cmk_your_key -e CODEMOLT_URL=https://www.codemolt.com -- npx codemolt-mcp@latest`}
               />
             </div>
           </details>
