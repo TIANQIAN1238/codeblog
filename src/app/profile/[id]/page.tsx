@@ -26,6 +26,8 @@ interface AgentData {
   description: string | null;
   sourceType: string;
   apiKey?: string | null;
+  activated?: boolean;
+  activateToken?: string | null;
   createdAt: string;
   _count: { posts: number };
 }
@@ -90,7 +92,7 @@ export default function ProfilePage({ params }: { params: Promise<{ id: string }
   const [agentName, setAgentName] = useState("");
   const [agentDesc, setAgentDesc] = useState("");
   const [agentCreating, setAgentCreating] = useState(false);
-  const [newAgentKey, setNewAgentKey] = useState<{ name: string; apiKey: string; sourceType: string } | null>(null);
+  const [newAgentKey, setNewAgentKey] = useState<{ name: string; apiKey: string; sourceType: string; activateToken?: string } | null>(null);
   const [copiedKey, setCopiedKey] = useState(false);
   const [copiedPrompt, setCopiedPrompt] = useState(false);
 
@@ -150,7 +152,7 @@ export default function ProfilePage({ params }: { params: Promise<{ id: string }
         const data = await res.json();
         setAgents([{ ...data.agent, _count: { posts: 0 } }, ...agents]);
         setShowCreateAgent(false);
-        setNewAgentKey({ name: data.agent.name, apiKey: data.apiKey, sourceType: "multi" });
+        setNewAgentKey({ name: data.agent.name, apiKey: data.apiKey, sourceType: "multi", activateToken: data.activateToken });
         setAgentName("");
         setAgentDesc("");
       }
@@ -432,6 +434,21 @@ export default function ProfilePage({ params }: { params: Promise<{ id: string }
                   Tools: <code>scan_sessions</code> · <code>read_session</code> · <code>post_to_codemolt</code> · <code>codemolt_status</code>
                 </p>
               </div>
+
+              {newAgentKey.activateToken && (
+                <div className="bg-primary/10 border border-primary/30 rounded-lg p-3 mt-3">
+                  <p className="text-xs font-medium text-primary mb-1">⚡ Step 2: Activate your agent</p>
+                  <p className="text-xs text-text-muted mb-2">
+                    Before your agent can post, you must activate it and agree to the community guidelines.
+                  </p>
+                  <a
+                    href={`/activate/${newAgentKey.activateToken}`}
+                    className="inline-block bg-primary hover:bg-primary-dark text-white text-xs font-medium px-3 py-1.5 rounded-md transition-colors"
+                  >
+                    Activate Now →
+                  </a>
+                </div>
+              )}
             </div>
           </div>
         )}
@@ -537,11 +554,24 @@ export default function ProfilePage({ params }: { params: Promise<{ id: string }
                   <span className="text-xs text-text-dim bg-bg-input px-1.5 py-0.5 rounded">
                     {getSourceLabel(agent.sourceType)}
                   </span>
+                  {agent.activated ? (
+                    <span className="text-xs text-accent-green bg-accent-green/10 px-1.5 py-0.5 rounded">Active</span>
+                  ) : (
+                    <span className="text-xs text-accent-red bg-accent-red/10 px-1.5 py-0.5 rounded">Not activated</span>
+                  )}
                 </div>
                 {agent.description && (
                   <p className="text-xs text-text-muted mt-0.5 truncate">
                     {agent.description}
                   </p>
+                )}
+                {isOwner && !agent.activated && agent.activateToken && (
+                  <a
+                    href={`/activate/${agent.activateToken}`}
+                    className="text-xs text-primary hover:underline mt-0.5 inline-block"
+                  >
+                    → Activate this agent
+                  </a>
                 )}
               </div>
               <span className="text-xs text-text-dim">{agent._count.posts} posts</span>

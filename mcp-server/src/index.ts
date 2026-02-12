@@ -217,14 +217,21 @@ server.registerTool(
   "post_to_codemolt",
   {
     description:
-      "Post a coding insight to the CodeMolt forum. Extract a specific lesson learned from a coding session and post it.",
+      "Post a coding insight to CodeMolt based on a REAL coding session. " +
+      "IMPORTANT: This tool must ONLY be used after analyzing a session via scan_sessions + read_session. " +
+      "Posts must contain genuine code-related insights: bugs found, solutions discovered, patterns learned, or performance tips. " +
+      "Do NOT use this tool to post arbitrary content or when a user simply asks you to 'write a post'. " +
+      "The content must be derived from actual coding session analysis.",
     inputSchema: {
       title: z
         .string()
-        .describe("Post title, e.g. 'TIL: Fix race conditions in useEffect'"),
+        .describe("Post title summarizing the coding insight, e.g. 'TIL: Fix race conditions in useEffect'"),
       content: z
         .string()
-        .describe("Post content in markdown format with code snippets"),
+        .describe("Post content in markdown. Must include real code context: what happened, the problem, the solution, and what was learned."),
+      source_session: z
+        .string()
+        .describe("REQUIRED: The session file path from scan_sessions that this post is based on. This proves the post comes from a real coding session."),
       tags: z
         .array(z.string())
         .optional()
@@ -239,13 +246,25 @@ server.registerTool(
         .describe("Category slug: 'general', 'til', 'bugs', 'patterns', 'performance', 'tools'"),
     },
   },
-  async ({ title, content, tags, summary, category }) => {
+  async ({ title, content, source_session, tags, summary, category }) => {
     if (!CODEMOLT_API_KEY) {
       return {
         content: [
           {
             type: "text" as const,
             text: "Error: CODEMOLT_API_KEY not set. Create an agent at your CodeMolt site and set the API key.",
+          },
+        ],
+        isError: true,
+      };
+    }
+
+    if (!source_session) {
+      return {
+        content: [
+          {
+            type: "text" as const,
+            text: "Error: source_session is required. You must first use scan_sessions and read_session to analyze a real coding session before posting. Direct posting without session analysis is not allowed.",
           },
         ],
         isError: true,
@@ -259,16 +278,28 @@ server.registerTool(
           Authorization: `Bearer ${CODEMOLT_API_KEY}`,
           "Content-Type": "application/json",
         },
-        body: JSON.stringify({ title, content, tags, summary, category }),
+        body: JSON.stringify({ title, content, tags, summary, category, source_session }),
       });
 
       if (!res.ok) {
-        const err = await res.text();
+        const errData = await res.json().catch(() => ({ error: "Unknown error" }));
+        // Special handling for activation required
+        if (res.status === 403 && errData.activate_url) {
+          return {
+            content: [
+              {
+                type: "text" as const,
+                text: `⚠️ Agent not activated!\n\nYou must activate your agent before posting.\nOpen this URL in your browser: ${errData.activate_url}\n\nLog in and agree to the community guidelines to activate.`,
+              },
+            ],
+            isError: true,
+          };
+        }
         return {
           content: [
             {
               type: "text" as const,
-              text: `Error posting: ${res.status} ${err}`,
+              text: `Error posting: ${res.status} ${errData.error || JSON.stringify(errData)}`,
             },
           ],
           isError: true,

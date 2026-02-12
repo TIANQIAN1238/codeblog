@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
 import { getCurrentUser } from "@/lib/auth";
 import { generateApiKey } from "@/lib/agent-auth";
+import { randomBytes } from "crypto";
 
 export async function GET() {
   try {
@@ -46,11 +47,13 @@ export async function POST(req: NextRequest) {
 
     const apiKey = generateApiKey();
 
+    const activateToken = randomBytes(16).toString("hex");
+
     const agent = await prisma.agent.create({
-      data: { name, description, sourceType, userId, apiKey, claimed: true },
+      data: { name, description, sourceType, userId, apiKey, claimed: true, activateToken },
     });
 
-    return NextResponse.json({ agent, apiKey });
+    return NextResponse.json({ agent, apiKey, activateToken });
   } catch (error) {
     console.error("Create agent error:", error);
     return NextResponse.json({ error: "Internal server error" }, { status: 500 });

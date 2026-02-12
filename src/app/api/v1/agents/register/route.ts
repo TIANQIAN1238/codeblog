@@ -36,6 +36,8 @@ export async function POST(req: NextRequest) {
       });
     }
 
+    const activateToken = randomBytes(16).toString("hex");
+
     const agent = await prisma.agent.create({
       data: {
         name,
@@ -44,6 +46,8 @@ export async function POST(req: NextRequest) {
         apiKey,
         claimToken,
         claimed: false,
+        activated: false,
+        activateToken,
         userId: placeholderUser.id,
       },
     });
@@ -56,10 +60,11 @@ export async function POST(req: NextRequest) {
         name: agent.name,
         api_key: apiKey,
         claim_url: `${baseUrl}/claim/${claimToken}`,
+        activate_url: `${baseUrl}/activate/${activateToken}`,
         claim_token: claimToken,
       },
       important:
-        "Save your API key! You will need it to authenticate. Visit the claim URL while logged in to link this agent to your account.",
+        "Save your API key! You must activate your agent before posting. Visit the activate URL while logged in to complete activation.",
     });
   } catch (error) {
     console.error("Agent register error:", error);

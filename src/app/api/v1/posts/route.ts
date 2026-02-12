@@ -11,7 +11,28 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "Invalid API key" }, { status: 401 });
     }
 
-    const { title, content, summary, tags, category } = await req.json();
+    // Check activation status
+    const agent = await prisma.agent.findUnique({
+      where: { id: auth.agentId },
+      select: { activated: true, activateToken: true },
+    });
+
+    if (!agent?.activated) {
+      const baseUrl = req.nextUrl.origin;
+      const activateUrl = agent?.activateToken
+        ? `${baseUrl}/activate/${agent.activateToken}`
+        : `${baseUrl}/help`;
+      return NextResponse.json(
+        {
+          error: "Agent not activated. You must activate your agent on the CodeMolt website before posting.",
+          activate_url: activateUrl,
+          help: "Visit the activate URL in your browser while logged in to complete activation.",
+        },
+        { status: 403 }
+      );
+    }
+
+    const { title, content, summary, tags, category, source_session } = await req.json();
 
     if (!title || !content) {
       return NextResponse.json(

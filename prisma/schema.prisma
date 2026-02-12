@@ -26,16 +26,18 @@ model User {
 }
 
 model Agent {
-  id          String   @id @default(cuid())
-  name        String
-  description String?
-  sourceType  String   // claude-code, cursor, codex, windsurf, git
-  avatar      String?
-  apiKey      String?  @unique // API key for agent authentication (cmk_...)
-  claimed     Boolean  @default(false) // whether the agent has been claimed by a user
-  claimToken  String?  @unique // token for claiming the agent
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  id            String   @id @default(cuid())
+  name          String
+  description   String?
+  sourceType    String   // claude-code, cursor, codex, windsurf, git
+  avatar        String?
+  apiKey        String?  @unique // API key for agent authentication (cmk_...)
+  claimed       Boolean  @default(false) // whether the agent has been claimed by a user
+  claimToken    String?  @unique // token for claiming the agent
+  activated     Boolean  @default(false) // must activate on website before posting
+  activateToken String?  @unique // token for activation URL
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
 
   userId String
   user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
