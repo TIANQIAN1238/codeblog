@@ -26,6 +26,7 @@ export async function GET(req: NextRequest) {
               user: { select: { id: true, username: true } },
             },
           },
+          category: { select: { slug: true, emoji: true } },
           _count: { select: { comments: true } },
         },
       }),

@@ -13,6 +13,9 @@ import {
   Check,
   Key,
   Download,
+  Eye,
+  ArrowBigUp,
+  MessageSquare,
 } from "lucide-react";
 import { PostCard } from "@/components/PostCard";
 import { getAgentEmoji, getSourceLabel, formatDate } from "@/lib/utils";
@@ -123,7 +126,12 @@ export default function ProfilePage({ params }: { params: Promise<{ id: string }
       .finally(() => setLoading(false));
   }, [id]);
 
+  const [activeTab, setActiveTab] = useState<"posts" | "agents">("posts");
+
   const isOwner = currentUserId === id;
+
+  const totalPostViews = posts.reduce((sum, p) => sum + p.views, 0);
+  const totalUpvotes = posts.reduce((sum, p) => sum + p.upvotes, 0);
 
   const handleCreateAgent = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -231,54 +239,82 @@ export default function ProfilePage({ params }: { params: Promise<{ id: string }
       </Link>
 
       {/* Profile header */}
-      <div className="bg-bg-card border border-border rounded-lg p-5 mb-6">
-        <div className="flex items-center gap-4">
-          <div className="w-14 h-14 rounded-full bg-primary/20 flex items-center justify-center">
-            <User className="w-7 h-7 text-primary" />
+      <div className="bg-bg-card border border-border rounded-lg p-5 mb-4">
+        <div className="flex items-start gap-4">
+          <div className="w-16 h-16 rounded-full bg-primary/20 flex items-center justify-center flex-shrink-0">
+            <User className="w-8 h-8 text-primary" />
           </div>
-          <div>
+          <div className="flex-1">
             <h1 className="text-xl font-bold">{profileUser.username}</h1>
             {profileUser.bio && (
               <p className="text-sm text-text-muted mt-0.5">{profileUser.bio}</p>
             )}
             <p className="text-xs text-text-dim mt-1">
-              Joined {formatDate(profileUser.createdAt)} · {agents.length} agent
-              {agents.length !== 1 ? "s" : ""} · {posts.length} post
-              {posts.length !== 1 ? "s" : ""}
+              Joined {formatDate(profileUser.createdAt)}
             </p>
           </div>
-        </div>
-      </div>
-
-      {/* Agents section */}
-      <div className="mb-6">
-        <div className="flex items-center justify-between mb-3">
-          <h2 className="text-sm font-semibold text-text-muted flex items-center gap-2">
-            <Bot className="w-4 h-4" />
-            AI Agents ({agents.length})
-          </h2>
           {isOwner && (
-            <div className="flex gap-2">
+            <div className="flex gap-2 flex-shrink-0">
               <button
                 onClick={() => setShowCreateAgent(!showCreateAgent)}
-                className="flex items-center gap-1 text-xs bg-primary/10 text-primary hover:bg-primary/20 px-2.5 py-1 rounded-md transition-colors"
+                className="flex items-center gap-1 text-xs bg-primary/10 text-primary hover:bg-primary/20 px-2.5 py-1.5 rounded-md transition-colors"
               >
                 <Plus className="w-3.5 h-3.5" />
                 New Agent
               </button>
-              {agents.length > 0 && (
-                <button
-                  onClick={() => setShowCreatePost(!showCreatePost)}
-                  className="flex items-center gap-1 text-xs bg-accent-green/10 text-accent-green hover:bg-accent-green/20 px-2.5 py-1 rounded-md transition-colors"
-                >
-                  <FileText className="w-3.5 h-3.5" />
-                  New Post
-                </button>
-              )}
             </div>
           )}
         </div>
 
+        {/* Stats row */}
+        <div className="flex items-center gap-6 mt-4 pt-4 border-t border-border">
+          <div className="text-center">
+            <div className="text-lg font-bold">{agents.length}</div>
+            <div className="text-xs text-text-dim flex items-center gap-1"><Bot className="w-3 h-3" /> agents</div>
+          </div>
+          <div className="text-center">
+            <div className="text-lg font-bold">{posts.length}</div>
+            <div className="text-xs text-text-dim flex items-center gap-1"><FileText className="w-3 h-3" /> posts</div>
+          </div>
+          <div className="text-center">
+            <div className="text-lg font-bold">{totalUpvotes}</div>
+            <div className="text-xs text-text-dim flex items-center gap-1"><ArrowBigUp className="w-3 h-3" /> upvotes</div>
+          </div>
+          <div className="text-center">
+            <div className="text-lg font-bold">{totalPostViews.toLocaleString()}</div>
+            <div className="text-xs text-text-dim flex items-center gap-1"><Eye className="w-3 h-3" /> views</div>
+          </div>
+        </div>
+      </div>
+
+      {/* Tabs */}
+      <div className="flex items-center gap-1 mb-4 border-b border-border pb-2">
+        <button
+          onClick={() => setActiveTab("posts")}
+          className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-sm transition-colors ${
+            activeTab === "posts"
+              ? "bg-primary/10 text-primary font-medium"
+              : "text-text-muted hover:text-text"
+          }`}
+        >
+          <FileText className="w-4 h-4" />
+          Posts ({posts.length})
+        </button>
+        <button
+          onClick={() => setActiveTab("agents")}
+          className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-sm transition-colors ${
+            activeTab === "agents"
+              ? "bg-primary/10 text-primary font-medium"
+              : "text-text-muted hover:text-text"
+          }`}
+        >
+          <Bot className="w-4 h-4" />
+          Agents ({agents.length})
+        </button>
+      </div>
+
+      {/* Agents tab content */}
+      <div className={activeTab === "agents" ? "" : "hidden"}>
         {/* Create Agent form */}
         {showCreateAgent && (
           <div className="bg-bg-card border border-primary/30 rounded-lg p-4 mb-4">
@@ -522,12 +558,8 @@ export default function ProfilePage({ params }: { params: Promise<{ id: string }
         </div>
       </div>
 
-      {/* Posts by this user's agents */}
-      <div>
-        <h2 className="text-sm font-semibold text-text-muted flex items-center gap-2 mb-3">
-          <FileText className="w-4 h-4" />
-          Posts ({posts.length})
-        </h2>
+      {/* Posts tab content */}
+      <div className={activeTab === "posts" ? "" : "hidden"}>
         <div className="space-y-3">
           {posts.map((post) => (
             <PostCard key={post.id} post={post} currentUserId={currentUserId} />

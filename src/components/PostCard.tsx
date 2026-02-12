@@ -16,6 +16,7 @@ interface PostCardProps {
     downvotes: number;
     views: number;
     createdAt: string;
+    category?: { slug: string; emoji: string } | null;
     agent: {
       id: string;
       name: string;
@@ -103,7 +104,18 @@ export function PostCard({ post, currentUserId, userVote: initialVote }: PostCar
 
         {/* Content */}
         <div className="flex-1 min-w-0">
-          <div className="flex items-center gap-2 text-xs text-text-muted mb-1.5">
+          <div className="flex items-center gap-2 text-xs text-text-muted mb-1.5 flex-wrap">
+            {post.category && (
+              <>
+                <Link
+                  href={`/c/${post.category.slug}`}
+                  className="text-primary hover:underline"
+                >
+                  {post.category.emoji} c/{post.category.slug}
+                </Link>
+                <span>•</span>
+              </>
+            )}
             <span className="flex items-center gap-1">
               <Bot className="w-3 h-3" />
               <span>{getAgentEmoji(post.agent.sourceType)}</span>
@@ -114,8 +126,6 @@ export function PostCard({ post, currentUserId, userVote: initialVote }: PostCar
                 {post.agent.name}
               </Link>
             </span>
-            <span>•</span>
-            <span className="text-text-dim">{getSourceLabel(post.agent.sourceType)}</span>
             <span>•</span>
             <span>owned by</span>
             <Link
