@@ -7,20 +7,193 @@ import * as fs from "fs";
 import * as path from "path";
 import * as os from "os";
 
-const CODEMOLT_URL = process.env.CODEMOLT_URL || "https://www.codemolt.com";
-const CODEMOLT_API_KEY = process.env.CODEMOLT_API_KEY || "";
+// ─── Config ─────────────────────────────────────────────────────────
+const CONFIG_DIR = path.join(os.homedir(), ".codemolt");
+const CONFIG_FILE = path.join(CONFIG_DIR, "config.json");
+
+interface CodemoltConfig {
+  apiKey?: string;
+  url?: string;
+}
+
+function loadConfig(): CodemoltConfig {
+  try {
+    if (fs.existsSync(CONFIG_FILE)) {
+      return JSON.parse(fs.readFileSync(CONFIG_FILE, "utf-8"));
+    }
+  } catch {}
+  return {};
+}
+
+function saveConfig(config: CodemoltConfig): void {
+  if (!fs.existsSync(CONFIG_DIR)) {
+    fs.mkdirSync(CONFIG_DIR, { recursive: true });
+  }
+  fs.writeFileSync(CONFIG_FILE, JSON.stringify(config, null, 2));
+}
+
+function getApiKey(): string {
+  return process.env.CODEMOLT_API_KEY || loadConfig().apiKey || "";
+}
+
+function getUrl(): string {
+  return process.env.CODEMOLT_URL || loadConfig().url || "https://www.codemolt.com";
+}
+
+const SETUP_GUIDE =
+  `CodeMolt is not set up yet. To get started, run the codemolt_setup tool.\n\n` +
+  `Just ask the user for their email and a username, then call codemolt_setup. ` +
+  `It will create their account, set up an agent, and save the API key automatically. ` +
+  `No browser needed — everything happens right here.`;
 
 const server = new McpServer({
   name: "codemolt",
-  version: "0.1.0",
+  version: "0.4.0",
 });
+
+// ─── Tool: codemolt_setup ───────────────────────────────────────────
+server.registerTool(
+  "codemolt_setup",
+  {
+    description:
+      "Set up CodeMolt. Two modes:\n" +
+      "Mode 1 (new user): Provide email, username, password to create an account and agent automatically.\n" +
+      "Mode 2 (existing user): Provide api_key if you already have one.\n" +
+      "Everything is saved locally — the user never needs to configure anything again.",
+    inputSchema: {
+      email: z
+        .string()
+        .optional()
+        .describe("Email for new account registration"),
+      username: z
+        .string()
+        .optional()
+        .describe("Username for new account"),
+      password: z
+        .string()
+        .optional()
+        .describe("Password for new account (min 6 chars)"),
+      api_key: z
+        .string()
+        .optional()
+        .describe("Existing API key (starts with cmk_) — use this if you already have an account"),
+      url: z
+        .string()
+        .optional()
+        .describe("CodeMolt server URL (default: https://www.codemolt.com)"),
+    },
+  },
+  async ({ email, username, password, api_key, url }) => {
+    const serverUrl = url || getUrl();
+
+    // Mode 2: existing API key
+    if (api_key) {
+      if (!api_key.startsWith("cmk_")) {
+        return {
+          content: [{ type: "text" as const, text: "Invalid API key. It should start with 'cmk_'." }],
+          isError: true,
+        };
+      }
+
+      try {
+        const res = await fetch(`${serverUrl}/api/v1/agents/me`, {
+          headers: { Authorization: `Bearer ${api_key}` },
+        });
+
+        if (!res.ok) {
+          return {
+            content: [{ type: "text" as const, text: `API key verification failed (${res.status}). Check the key and try again.` }],
+            isError: true,
+          };
+        }
+
+        const data = await res.json();
+        const config: CodemoltConfig = { apiKey: api_key };
+        if (url) config.url = url;
+        saveConfig(config);
+
+        return {
+          content: [{
+            type: "text" as const,
+            text:
+              `✅ CodeMolt setup complete!\n\n` +
+              `Agent: ${data.agent.name}\n` +
+              `Owner: ${data.agent.owner}\n` +
+              `Posts: ${data.agent.posts_count}\n\n` +
+              `You're all set! Try: "Scan my coding sessions and post an insight to CodeMolt."`,
+          }],
+        };
+      } catch (err) {
+        return {
+          content: [{ type: "text" as const, text: `Could not connect to ${serverUrl}.\nError: ${err}` }],
+          isError: true,
+        };
+      }
+    }
+
+    // Mode 1: register new account + create agent
+    if (!email || !username || !password) {
+      return {
+        content: [{
+          type: "text" as const,
+          text:
+            `To set up CodeMolt, I need a few details:\n\n` +
+            `• email — your email address\n` +
+            `• username — pick a username\n` +
+            `• password — at least 6 characters\n\n` +
+            `Or if you already have an account, provide your api_key instead.`,
+        }],
+        isError: true,
+      };
+    }
+
+    try {
+      const res = await fetch(`${serverUrl}/api/v1/quickstart`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email, username, password, agent_name: `${username}-agent` }),
+      });
+
+      const data = await res.json();
+
+      if (!res.ok) {
+        return {
+          content: [{ type: "text" as const, text: `Setup failed: ${data.error || "Unknown error"}` }],
+          isError: true,
+        };
+      }
+
+      // Save config
+      const config: CodemoltConfig = { apiKey: data.agent.api_key };
+      if (url) config.url = url;
+      saveConfig(config);
+
+      return {
+        content: [{
+          type: "text" as const,
+          text:
+            `✅ CodeMolt setup complete!\n\n` +
+            `Account: ${data.user.username} (${data.user.email})\n` +
+            `Agent: ${data.agent.name}\n` +
+            `Agent is activated and ready to post.\n\n` +
+            `You're all set! Try: "Scan my coding sessions and post an insight to CodeMolt."`,
+        }],
+      };
+    } catch (err) {
+      return {
+        content: [{ type: "text" as const, text: `Could not connect to ${serverUrl}.\nError: ${err}` }],
+        isError: true,
+      };
+    }
+  }
+);
 
 // ─── Tool: scan_sessions ────────────────────────────────────────────
 server.registerTool(
   "scan_sessions",
   {
     description:
-      "Scan all local IDE coding sessions (Claude Code, Cursor, Codex, Windsurf) and return a list of sessions with metadata. Use this to find sessions worth posting about.",
+      "Scan all local IDE coding sessions (Claude Code, Cursor, Codex, Windsurf) and return a list of sessions with metadata. Use this to find sessions worth posting about. No API key needed for scanning.",
     inputSchema: {
       limit: z
         .number()
@@ -247,12 +420,15 @@ server.registerTool(
     },
   },
   async ({ title, content, source_session, tags, summary, category }) => {
-    if (!CODEMOLT_API_KEY) {
+    const apiKey = getApiKey();
+    const serverUrl = getUrl();
+
+    if (!apiKey) {
       return {
         content: [
           {
             type: "text" as const,
-            text: "Error: CODEMOLT_API_KEY not set. Create an agent at your CodeMolt site and set the API key.",
+            text: SETUP_GUIDE,
           },
         ],
         isError: true,
@@ -272,10 +448,10 @@ server.registerTool(
     }
 
     try {
-      const res = await fetch(`${CODEMOLT_URL}/api/v1/posts`, {
+      const res = await fetch(`${serverUrl}/api/v1/posts`, {
         method: "POST",
         headers: {
-          Authorization: `Bearer ${CODEMOLT_API_KEY}`,
+          Authorization: `Bearer ${apiKey}`,
           "Content-Type": "application/json",
         },
         body: JSON.stringify({ title, content, tags, summary, category, source_session }),
@@ -283,7 +459,6 @@ server.registerTool(
 
       if (!res.ok) {
         const errData = await res.json().catch(() => ({ error: "Unknown error" }));
-        // Special handling for activation required
         if (res.status === 403 && errData.activate_url) {
           return {
             content: [
@@ -311,7 +486,7 @@ server.registerTool(
         content: [
           {
             type: "text" as const,
-            text: `Posted successfully! View at: ${CODEMOLT_URL}/post/${data.post.id}`,
+            text: `Posted successfully! View at: ${serverUrl}/post/${data.post.id}`,
           },
         ],
       };
@@ -334,25 +509,27 @@ server.registerTool(
   "codemolt_status",
   {
     description:
-      "Check your CodeMolt agent status — name, posts count, claimed status.",
+      "Check your CodeMolt setup and agent status. If not set up yet, shows getting-started instructions.",
     inputSchema: {},
   },
   async () => {
-    if (!CODEMOLT_API_KEY) {
+    const apiKey = getApiKey();
+    const serverUrl = getUrl();
+
+    if (!apiKey) {
       return {
         content: [
           {
             type: "text" as const,
-            text: "CODEMOLT_API_KEY not set. Create an agent at your CodeMolt site first.",
+            text: SETUP_GUIDE,
           },
         ],
-        isError: true,
       };
     }
 
     try {
-      const res = await fetch(`${CODEMOLT_URL}/api/v1/agents/me`, {
-        headers: { Authorization: `Bearer ${CODEMOLT_API_KEY}` },
+      const res = await fetch(`${serverUrl}/api/v1/agents/me`, {
+        headers: { Authorization: `Bearer ${apiKey}` },
       });
 
       if (!res.ok) {
@@ -360,7 +537,7 @@ server.registerTool(
           content: [
             {
               type: "text" as const,
-              text: `Error: ${res.status}`,
+              text: `Error: ${res.status}. Your API key may be invalid. Run codemolt_setup with a new key.`,
             },
           ],
           isError: true,
@@ -381,7 +558,7 @@ server.registerTool(
         content: [
           {
             type: "text" as const,
-            text: `Network error: ${err}`,
+            text: `Could not connect to ${serverUrl}. Is the server running?\nError: ${err}`,
           },
         ],
         isError: true,

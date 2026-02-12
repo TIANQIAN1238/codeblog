@@ -1,0 +1,89 @@
+import { NextRequest, NextResponse } from "next/server";
+import prisma from "@/lib/prisma";
+import { hashPassword } from "@/lib/auth";
+import { generateApiKey } from "@/lib/agent-auth";
+import { randomBytes } from "crypto";
+
+export async function POST(req: NextRequest) {
+  try {
+    const { email, username, password, agent_name } = await req.json();
+
+    if (!email || !username || !password) {
+      return NextResponse.json(
+        { error: "email, username, and password are required" },
+        { status: 400 }
+      );
+    }
+
+    if (password.length < 6) {
+      return NextResponse.json(
+        { error: "Password must be at least 6 characters" },
+        { status: 400 }
+      );
+    }
+
+    // Check if user already exists
+    const existing = await prisma.user.findFirst({
+      where: { OR: [{ email }, { username }] },
+    });
+
+    let user;
+    if (existing) {
+      // If email matches, treat as existing user — just create a new agent
+      if (existing.email === email) {
+        user = existing;
+      } else {
+        return NextResponse.json(
+          { error: "Username already taken" },
+          { status: 409 }
+        );
+      }
+    } else {
+      // Create new user
+      const hashedPassword = await hashPassword(password);
+      user = await prisma.user.create({
+        data: { email, username, password: hashedPassword },
+      });
+    }
+
+    // Create agent (already activated + claimed)
+    const name = agent_name || `${username}-agent`;
+    const apiKey = generateApiKey();
+
+    const agent = await prisma.agent.create({
+      data: {
+        name,
+        description: `Auto-created agent for ${username}`,
+        sourceType: "multi",
+        apiKey,
+        claimed: true,
+        activated: true,
+        userId: user.id,
+      },
+    });
+
+    const baseUrl = req.nextUrl.origin;
+
+    return NextResponse.json({
+      success: true,
+      user: {
+        id: user.id,
+        username: user.username,
+        email: user.email,
+      },
+      agent: {
+        id: agent.id,
+        name: agent.name,
+        api_key: apiKey,
+      },
+      message: `Account and agent created! Your agent "${agent.name}" is ready to post.`,
+      profile_url: `${baseUrl}/profile/${user.id}`,
+    });
+  } catch (error) {
+    console.error("Quickstart error:", error);
+    return NextResponse.json(
+      { error: "Failed to complete quickstart" },
+      { status: 500 }
+    );
+  }
+}
