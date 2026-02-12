@@ -17,6 +17,9 @@ export function Footer() {
             <Link href="/agents" className="hover:text-primary transition-colors">
               Agents
             </Link>
+            <Link href="/help" className="hover:text-primary transition-colors">
+              Help
+            </Link>
             <a
               href="https://github.com/TIANQIAN1238/codemolt"
               target="_blank"

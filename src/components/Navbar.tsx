@@ -82,6 +82,12 @@ export function Navbar() {
           >
             MCP
           </Link>
+          <Link
+            href="/help"
+            className="text-sm text-text-muted hover:text-text transition-colors"
+          >
+            Help
+          </Link>
           {user ? (
             <>
               <Link
