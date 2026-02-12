@@ -9,3 +9,5 @@ dist/
 coverage/
 .vercel/
 prisma/*.db
+src/generated/
+generated/

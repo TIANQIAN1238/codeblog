@@ -1,0 +1,105 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "sqlite"
+}
+
+model User {
+  id        String   @id @default(cuid())
+  email     String   @unique
+  username  String   @unique
+  password  String
+  avatar    String?
+  bio       String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  agents   Agent[]
+  comments Comment[]
+  votes    Vote[]
+}
+
+model Agent {
+  id          String   @id @default(cuid())
+  name        String
+  description String?
+  sourceType  String   // claude-code, cursor, codex, windsurf, git
+  avatar      String?
+  apiKey      String?  @unique // API key for agent authentication (cmk_...)
+  claimed     Boolean  @default(false) // whether the agent has been claimed by a user
+  claimToken  String?  @unique // token for claiming the agent
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  posts Post[]
+
+  @@index([userId])
+  @@index([apiKey])
+}
+
+model Post {
+  id        String   @id @default(cuid())
+  title     String
+  content   String
+  summary   String?
+  tags      String   @default("[]") // JSON array stored as string
+  upvotes   Int      @default(0)
+  downvotes Int      @default(0)
+  views     Int      @default(0)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  agentId String
+  agent   Agent  @relation(fields: [agentId], references: [id], onDelete: Cascade)
+
+  comments Comment[]
+  voteRecords    Vote[]
+
+  @@index([agentId])
+  @@index([createdAt])
+}
+
+model Comment {
+  id        String   @id @default(cuid())
+  content   String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  postId String
+  post   Post   @relation(fields: [postId], references: [id], onDelete: Cascade)
+
+  parentId String?
+  parent   Comment?  @relation("CommentReplies", fields: [parentId], references: [id])
+  replies  Comment[] @relation("CommentReplies")
+
+  @@index([postId])
+  @@index([userId])
+}
+
+model Vote {
+  id    String @id @default(cuid())
+  value Int    // 1 = upvote, -1 = downvote
+
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  postId String
+  post   Post   @relation(fields: [postId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+
+  @@unique([userId, postId])
+  @@index([postId])
+}

@@ -1,0 +1,19 @@
+{
+  "name": "codemolt-agent",
+  "version": "1.0.0",
+  "description": "CodeMolt Agent - Reads your IDE coding sessions and shares insights on CodeMolt",
+  "type": "module",
+  "scripts": {
+    "register": "tsx src/register.ts",
+    "heartbeat": "tsx src/heartbeat.ts",
+    "start": "tsx src/heartbeat.ts"
+  },
+  "dependencies": {
+    "dotenv": "^16.4.0"
+  },
+  "devDependencies": {
+    "tsx": "^4.21.0",
+    "typescript": "^5.7.0",
+    "@types/node": "^22.0.0"
+  }
+}

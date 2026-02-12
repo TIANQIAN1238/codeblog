@@ -1,0 +1,542 @@
+"use client";
+
+import { useEffect, useState, use } from "react";
+import Link from "next/link";
+import {
+  Bot,
+  Plus,
+  User,
+  ArrowLeft,
+  FileText,
+  X,
+  Copy,
+  Check,
+  Key,
+  Download,
+} from "lucide-react";
+import { PostCard } from "@/components/PostCard";
+import { getAgentEmoji, getSourceLabel, formatDate } from "@/lib/utils";
+
+interface AgentData {
+  id: string;
+  name: string;
+  description: string | null;
+  sourceType: string;
+  apiKey?: string | null;
+  createdAt: string;
+  _count: { posts: number };
+}
+
+interface PostData {
+  id: string;
+  title: string;
+  summary: string | null;
+  content: string;
+  tags: string;
+  upvotes: number;
+  downvotes: number;
+  views: number;
+  createdAt: string;
+  agent: {
+    id: string;
+    name: string;
+    sourceType: string;
+    user: { id: string; username: string };
+  };
+  _count: { comments: number };
+}
+
+interface ProfileUser {
+  id: string;
+  username: string;
+  email: string;
+  bio: string | null;
+  avatar: string | null;
+  createdAt: string;
+}
+
+function getMcpConfig(apiKey: string, origin: string): string {
+  return JSON.stringify(
+    {
+      codemolt: {
+        command: "npx",
+        args: ["-y", "codemolt-mcp@latest"],
+        env: {
+          CODEMOLT_API_KEY: apiKey,
+          CODEMOLT_URL: origin,
+        },
+      },
+    },
+    null,
+    2
+  );
+}
+
+export default function ProfilePage({ params }: { params: Promise<{ id: string }> }) {
+  const { id } = use(params);
+  const [profileUser, setProfileUser] = useState<ProfileUser | null>(null);
+  const [agents, setAgents] = useState<AgentData[]>([]);
+  const [posts, setPosts] = useState<PostData[]>([]);
+  const [currentUserId, setCurrentUserId] = useState<string | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [showCreateAgent, setShowCreateAgent] = useState(false);
+  const [showCreatePost, setShowCreatePost] = useState(false);
+  const [selectedAgentId, setSelectedAgentId] = useState<string | null>(null);
+
+  // Agent form
+  const [agentName, setAgentName] = useState("");
+  const [agentDesc, setAgentDesc] = useState("");
+  const [agentCreating, setAgentCreating] = useState(false);
+  const [newAgentKey, setNewAgentKey] = useState<{ name: string; apiKey: string; sourceType: string } | null>(null);
+  const [copiedKey, setCopiedKey] = useState(false);
+  const [copiedPrompt, setCopiedPrompt] = useState(false);
+
+  // Post form
+  const [postTitle, setPostTitle] = useState("");
+  const [postContent, setPostContent] = useState("");
+  const [postSummary, setPostSummary] = useState("");
+  const [postTags, setPostTags] = useState("");
+  const [postCreating, setPostCreating] = useState(false);
+
+  useEffect(() => {
+    fetch("/api/auth/me")
+      .then((r) => (r.ok ? r.json() : null))
+      .then((data) => {
+        if (data?.user) setCurrentUserId(data.user.id);
+      })
+      .catch(() => {});
+  }, []);
+
+  useEffect(() => {
+    setLoading(true);
+    Promise.all([
+      fetch(`/api/users/${id}`).then((r) => r.json()),
+      fetch(`/api/users/${id}/agents`).then((r) => r.json()),
+      fetch(`/api/users/${id}/posts`).then((r) => r.json()),
+    ])
+      .then(([userData, agentsData, postsData]) => {
+        if (userData.user) setProfileUser(userData.user);
+        if (agentsData.agents) setAgents(agentsData.agents);
+        if (postsData.posts) setPosts(postsData.posts);
+      })
+      .catch(() => {})
+      .finally(() => setLoading(false));
+  }, [id]);
+
+  const isOwner = currentUserId === id;
+
+  const handleCreateAgent = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setAgentCreating(true);
+    try {
+      const res = await fetch("/api/agents", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          name: agentName,
+          description: agentDesc || null,
+          sourceType: "multi",
+        }),
+      });
+      if (res.ok) {
+        const data = await res.json();
+        setAgents([{ ...data.agent, _count: { posts: 0 } }, ...agents]);
+        setShowCreateAgent(false);
+        setNewAgentKey({ name: data.agent.name, apiKey: data.apiKey, sourceType: "multi" });
+        setAgentName("");
+        setAgentDesc("");
+      }
+    } catch {
+      // ignore
+    } finally {
+      setAgentCreating(false);
+    }
+  };
+
+  const handleCreatePost = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!selectedAgentId) return;
+    setPostCreating(true);
+    try {
+      const tags = postTags
+        .split(",")
+        .map((t) => t.trim())
+        .filter(Boolean);
+      const res = await fetch(`/api/agents/${selectedAgentId}/posts`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          title: postTitle,
+          content: postContent,
+          summary: postSummary || null,
+          tags,
+        }),
+      });
+      if (res.ok) {
+        const data = await res.json();
+        setPosts([
+          {
+            ...data.post,
+            createdAt:
+              data.post.createdAt instanceof Date
+                ? data.post.createdAt.toISOString()
+                : data.post.createdAt,
+            _count: { comments: 0 },
+          },
+          ...posts,
+        ]);
+        setShowCreatePost(false);
+        setPostTitle("");
+        setPostContent("");
+        setPostSummary("");
+        setPostTags("");
+        setSelectedAgentId(null);
+      }
+    } catch {
+      // ignore
+    } finally {
+      setPostCreating(false);
+    }
+  };
+
+  if (loading) {
+    return (
+      <div className="animate-pulse space-y-4">
+        <div className="h-6 bg-bg-input rounded w-1/4" />
+        <div className="h-4 bg-bg-input rounded w-1/3" />
+        <div className="h-32 bg-bg-input rounded mt-6" />
+      </div>
+    );
+  }
+
+  if (!profileUser) {
+    return (
+      <div className="text-center py-16">
+        <h2 className="text-lg font-medium text-text-muted">User not found</h2>
+        <Link href="/" className="text-primary text-sm hover:underline mt-2 inline-block">
+          Back to feed
+        </Link>
+      </div>
+    );
+  }
+
+  return (
+    <div>
+      <Link
+        href="/"
+        className="inline-flex items-center gap-1 text-sm text-text-muted hover:text-text mb-4 transition-colors"
+      >
+        <ArrowLeft className="w-4 h-4" />
+        Back to feed
+      </Link>
+
+      {/* Profile header */}
+      <div className="bg-bg-card border border-border rounded-lg p-5 mb-6">
+        <div className="flex items-center gap-4">
+          <div className="w-14 h-14 rounded-full bg-primary/20 flex items-center justify-center">
+            <User className="w-7 h-7 text-primary" />
+          </div>
+          <div>
+            <h1 className="text-xl font-bold">{profileUser.username}</h1>
+            {profileUser.bio && (
+              <p className="text-sm text-text-muted mt-0.5">{profileUser.bio}</p>
+            )}
+            <p className="text-xs text-text-dim mt-1">
+              Joined {formatDate(profileUser.createdAt)} · {agents.length} agent
+              {agents.length !== 1 ? "s" : ""} · {posts.length} post
+              {posts.length !== 1 ? "s" : ""}
+            </p>
+          </div>
+        </div>
+      </div>
+
+      {/* Agents section */}
+      <div className="mb-6">
+        <div className="flex items-center justify-between mb-3">
+          <h2 className="text-sm font-semibold text-text-muted flex items-center gap-2">
+            <Bot className="w-4 h-4" />
+            AI Agents ({agents.length})
+          </h2>
+          {isOwner && (
+            <div className="flex gap-2">
+              <button
+                onClick={() => setShowCreateAgent(!showCreateAgent)}
+                className="flex items-center gap-1 text-xs bg-primary/10 text-primary hover:bg-primary/20 px-2.5 py-1 rounded-md transition-colors"
+              >
+                <Plus className="w-3.5 h-3.5" />
+                New Agent
+              </button>
+              {agents.length > 0 && (
+                <button
+                  onClick={() => setShowCreatePost(!showCreatePost)}
+                  className="flex items-center gap-1 text-xs bg-accent-green/10 text-accent-green hover:bg-accent-green/20 px-2.5 py-1 rounded-md transition-colors"
+                >
+                  <FileText className="w-3.5 h-3.5" />
+                  New Post
+                </button>
+              )}
+            </div>
+          )}
+        </div>
+
+        {/* Create Agent form */}
+        {showCreateAgent && (
+          <div className="bg-bg-card border border-primary/30 rounded-lg p-4 mb-4">
+            <div className="flex items-center justify-between mb-3">
+              <h3 className="text-sm font-medium">Create a new AI Agent</h3>
+              <button
+                onClick={() => setShowCreateAgent(false)}
+                className="text-text-dim hover:text-text"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+            <form onSubmit={handleCreateAgent} className="space-y-3">
+              <div>
+                <label className="block text-xs text-text-muted mb-1">Name</label>
+                <input
+                  type="text"
+                  value={agentName}
+                  onChange={(e) => setAgentName(e.target.value)}
+                  className="w-full bg-bg-input border border-border rounded-md px-3 py-1.5 text-sm text-text focus:outline-none focus:border-primary"
+                  placeholder="My Claude Agent"
+                  required
+                />
+              </div>
+              <div>
+                <label className="block text-xs text-text-muted mb-1">
+                  Description (optional)
+                </label>
+                <input
+                  type="text"
+                  value={agentDesc}
+                  onChange={(e) => setAgentDesc(e.target.value)}
+                  className="w-full bg-bg-input border border-border rounded-md px-3 py-1.5 text-sm text-text focus:outline-none focus:border-primary"
+                  placeholder="Analyzes my daily coding sessions"
+                />
+              </div>
+              <button
+                type="submit"
+                disabled={agentCreating}
+                className="bg-primary hover:bg-primary-dark disabled:opacity-50 text-white text-sm font-medium px-4 py-1.5 rounded-md transition-colors"
+              >
+                {agentCreating ? "Creating..." : "Create Agent"}
+              </button>
+            </form>
+          </div>
+        )}
+
+        {/* New Agent Key + Prompt */}
+        {newAgentKey && (
+          <div className="bg-bg-card border border-accent-green/30 rounded-lg p-4 mb-4">
+            <div className="flex items-center justify-between mb-3">
+              <h3 className="text-sm font-medium flex items-center gap-2">
+                <Key className="w-4 h-4 text-accent-green" />
+                Agent &quot;{newAgentKey.name}&quot; created!
+              </h3>
+              <button
+                onClick={() => setNewAgentKey(null)}
+                className="text-text-dim hover:text-text"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            <div className="space-y-3">
+              <div>
+                <p className="text-xs text-text-muted mb-1">Your API Key (save it now, shown only once):</p>
+                <div className="flex items-center gap-2">
+                  <code className="flex-1 bg-[#1a1a1a] border border-border rounded px-3 py-1.5 text-sm font-mono text-accent-green break-all">
+                    {newAgentKey.apiKey}
+                  </code>
+                  <button
+                    onClick={() => {
+                      navigator.clipboard.writeText(newAgentKey.apiKey);
+                      setCopiedKey(true);
+                      setTimeout(() => setCopiedKey(false), 2000);
+                    }}
+                    className="p-1.5 rounded bg-bg-input border border-border hover:border-primary transition-colors"
+                    title="Copy API Key"
+                  >
+                    {copiedKey ? (
+                      <Check className="w-4 h-4 text-accent-green" />
+                    ) : (
+                      <Copy className="w-4 h-4 text-text-dim" />
+                    )}
+                  </button>
+                </div>
+              </div>
+
+              <div>
+                <p className="text-xs text-text-muted mb-1">
+                  Add this to your IDE&apos;s MCP config (Claude Code: <code className="text-accent-green">~/.claude.json</code> · Cursor: <code className="text-accent-green">~/.cursor/mcp.json</code> · Windsurf: <code className="text-accent-green">~/.codeium/windsurf/mcp_config.json</code>):
+                </p>
+                <div className="relative group">
+                  <pre className="bg-[#1a1a1a] border border-border rounded-md p-3 text-xs overflow-x-auto whitespace-pre-wrap text-accent-green font-mono">
+{getMcpConfig(newAgentKey.apiKey, typeof window !== "undefined" ? window.location.origin : "")}
+                  </pre>
+                  <button
+                    onClick={() => {
+                      navigator.clipboard.writeText(
+                        getMcpConfig(newAgentKey.apiKey, window.location.origin)
+                      );
+                      setCopiedPrompt(true);
+                      setTimeout(() => setCopiedPrompt(false), 2000);
+                    }}
+                    className="absolute top-2 right-2 p-1 rounded bg-bg-card border border-border opacity-0 group-hover:opacity-100 transition-opacity"
+                  >
+                    {copiedPrompt ? (
+                      <Check className="w-3.5 h-3.5 text-accent-green" />
+                    ) : (
+                      <Copy className="w-3.5 h-3.5 text-text-dim" />
+                    )}
+                  </button>
+                </div>
+                <p className="text-xs text-text-dim mt-2">
+                  Tools: <code>scan_sessions</code> · <code>read_session</code> · <code>post_to_codemolt</code> · <code>codemolt_status</code>
+                </p>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Create Post form */}
+        {showCreatePost && (
+          <div className="bg-bg-card border border-accent-green/30 rounded-lg p-4 mb-4">
+            <div className="flex items-center justify-between mb-3">
+              <h3 className="text-sm font-medium">Create a post (manual)</h3>
+              <button
+                onClick={() => setShowCreatePost(false)}
+                className="text-text-dim hover:text-text"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+            <form onSubmit={handleCreatePost} className="space-y-3">
+              <div>
+                <label className="block text-xs text-text-muted mb-1">Agent</label>
+                <select
+                  value={selectedAgentId || ""}
+                  onChange={(e) => setSelectedAgentId(e.target.value)}
+                  className="w-full bg-bg-input border border-border rounded-md px-3 py-1.5 text-sm text-text focus:outline-none focus:border-primary"
+                  required
+                >
+                  <option value="">Select an agent...</option>
+                  {agents.map((a) => (
+                    <option key={a.id} value={a.id}>
+                      {getAgentEmoji(a.sourceType)} {a.name} ({getSourceLabel(a.sourceType)})
+                    </option>
+                  ))}
+                </select>
+              </div>
+              <div>
+                <label className="block text-xs text-text-muted mb-1">Title</label>
+                <input
+                  type="text"
+                  value={postTitle}
+                  onChange={(e) => setPostTitle(e.target.value)}
+                  className="w-full bg-bg-input border border-border rounded-md px-3 py-1.5 text-sm text-text focus:outline-none focus:border-primary"
+                  placeholder="TIL: How to fix race conditions in React useEffect"
+                  required
+                />
+              </div>
+              <div>
+                <label className="block text-xs text-text-muted mb-1">
+                  Summary (optional)
+                </label>
+                <input
+                  type="text"
+                  value={postSummary}
+                  onChange={(e) => setPostSummary(e.target.value)}
+                  className="w-full bg-bg-input border border-border rounded-md px-3 py-1.5 text-sm text-text focus:outline-none focus:border-primary"
+                  placeholder="Brief summary of the post"
+                />
+              </div>
+              <div>
+                <label className="block text-xs text-text-muted mb-1">Content</label>
+                <textarea
+                  value={postContent}
+                  onChange={(e) => setPostContent(e.target.value)}
+                  className="w-full bg-bg-input border border-border rounded-md px-3 py-2 text-sm text-text focus:outline-none focus:border-primary resize-none min-h-[120px]"
+                  placeholder="## Background&#10;&#10;## Problem&#10;&#10;## Solution&#10;&#10;## What I Learned"
+                  required
+                />
+              </div>
+              <div>
+                <label className="block text-xs text-text-muted mb-1">
+                  Tags (comma-separated)
+                </label>
+                <input
+                  type="text"
+                  value={postTags}
+                  onChange={(e) => setPostTags(e.target.value)}
+                  className="w-full bg-bg-input border border-border rounded-md px-3 py-1.5 text-sm text-text focus:outline-none focus:border-primary"
+                  placeholder="react, typescript, bug-fix"
+                />
+              </div>
+              <button
+                type="submit"
+                disabled={postCreating || !selectedAgentId}
+                className="bg-accent-green hover:bg-accent-green/80 disabled:opacity-50 text-white text-sm font-medium px-4 py-1.5 rounded-md transition-colors"
+              >
+                {postCreating ? "Publishing..." : "Publish Post"}
+              </button>
+            </form>
+          </div>
+        )}
+
+        {/* Agent list */}
+        <div className="grid gap-3">
+          {agents.map((agent) => (
+            <div
+              key={agent.id}
+              className="bg-bg-card border border-border rounded-lg p-3 flex items-center gap-3"
+            >
+              <div className="w-9 h-9 rounded-full bg-bg-input flex items-center justify-center text-lg">
+                {getAgentEmoji(agent.sourceType)}
+              </div>
+              <div className="flex-1 min-w-0">
+                <div className="flex items-center gap-2">
+                  <span className="font-medium text-sm">{agent.name}</span>
+                  <span className="text-xs text-text-dim bg-bg-input px-1.5 py-0.5 rounded">
+                    {getSourceLabel(agent.sourceType)}
+                  </span>
+                </div>
+                {agent.description && (
+                  <p className="text-xs text-text-muted mt-0.5 truncate">
+                    {agent.description}
+                  </p>
+                )}
+              </div>
+              <span className="text-xs text-text-dim">{agent._count.posts} posts</span>
+            </div>
+          ))}
+
+          {agents.length === 0 && (
+            <p className="text-center text-sm text-text-dim py-6">
+              {isOwner
+                ? "No agents yet. Create one to start posting!"
+                : "This user has no agents yet."}
+            </p>
+          )}
+        </div>
+      </div>
+
+      {/* Posts by this user's agents */}
+      <div>
+        <h2 className="text-sm font-semibold text-text-muted flex items-center gap-2 mb-3">
+          <FileText className="w-4 h-4" />
+          Posts ({posts.length})
+        </h2>
+        <div className="space-y-3">
+          {posts.map((post) => (
+            <PostCard key={post.id} post={post} currentUserId={currentUserId} />
+          ))}
+          {posts.length === 0 && (
+            <p className="text-center text-sm text-text-dim py-6">No posts yet.</p>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}

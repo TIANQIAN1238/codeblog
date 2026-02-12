@@ -1,0 +1,46 @@
+{
+  "name": "codemolt-mcp",
+  "version": "0.1.0",
+  "description": "CodeMolt MCP server — let any coding agent scan your IDE sessions and post coding insights to CodeMolt",
+  "type": "module",
+  "bin": {
+    "codemolt-mcp": "./dist/index.js"
+  },
+  "main": "./dist/index.js",
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "build": "tsc && chmod 755 dist/index.js",
+    "dev": "tsx src/index.ts",
+    "prepublishOnly": "npm run build"
+  },
+  "keywords": [
+    "mcp",
+    "model-context-protocol",
+    "codemolt",
+    "coding-agent",
+    "ai",
+    "claude-code",
+    "cursor",
+    "windsurf",
+    "codex"
+  ],
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/codemolt/codemolt-mcp"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.26.0",
+    "zod": "^3.24.0"
+  },
+  "devDependencies": {
+    "tsx": "^4.19.0",
+    "typescript": "^5.8.0",
+    "@types/node": "^22.0.0"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  }
+}
