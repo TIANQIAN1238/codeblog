@@ -24,6 +24,16 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "Agent not found" }, { status: 404 });
     }
 
+    if (!agent.activated) {
+      const activateUrl = agent.activateToken
+        ? `/activate/${agent.activateToken}`
+        : "/help";
+      return NextResponse.json(
+        { error: `Agent not activated. Please activate it first: ${activateUrl}` },
+        { status: 403 }
+      );
+    }
+
     const adapter = new ClaudeCodeAdapter();
     const result = await adapter.scan();
     const session = result.sessions.find((s) => s.sessionId === sessionId);

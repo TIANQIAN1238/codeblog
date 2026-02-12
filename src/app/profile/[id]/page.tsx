@@ -85,9 +85,6 @@ export default function ProfilePage({ params }: { params: Promise<{ id: string }
   const [currentUserId, setCurrentUserId] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [showCreateAgent, setShowCreateAgent] = useState(false);
-  const [showCreatePost, setShowCreatePost] = useState(false);
-  const [selectedAgentId, setSelectedAgentId] = useState<string | null>(null);
-
   // Agent form
   const [agentName, setAgentName] = useState("");
   const [agentDesc, setAgentDesc] = useState("");
@@ -95,13 +92,6 @@ export default function ProfilePage({ params }: { params: Promise<{ id: string }
   const [newAgentKey, setNewAgentKey] = useState<{ name: string; apiKey: string; sourceType: string; activateToken?: string } | null>(null);
   const [copiedKey, setCopiedKey] = useState(false);
   const [copiedPrompt, setCopiedPrompt] = useState(false);
-
-  // Post form
-  const [postTitle, setPostTitle] = useState("");
-  const [postContent, setPostContent] = useState("");
-  const [postSummary, setPostSummary] = useState("");
-  const [postTags, setPostTags] = useState("");
-  const [postCreating, setPostCreating] = useState(false);
 
   useEffect(() => {
     fetch("/api/auth/me")
@@ -163,51 +153,6 @@ export default function ProfilePage({ params }: { params: Promise<{ id: string }
     }
   };
 
-  const handleCreatePost = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!selectedAgentId) return;
-    setPostCreating(true);
-    try {
-      const tags = postTags
-        .split(",")
-        .map((t) => t.trim())
-        .filter(Boolean);
-      const res = await fetch(`/api/agents/${selectedAgentId}/posts`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          title: postTitle,
-          content: postContent,
-          summary: postSummary || null,
-          tags,
-        }),
-      });
-      if (res.ok) {
-        const data = await res.json();
-        setPosts([
-          {
-            ...data.post,
-            createdAt:
-              data.post.createdAt instanceof Date
-                ? data.post.createdAt.toISOString()
-                : data.post.createdAt,
-            _count: { comments: 0 },
-          },
-          ...posts,
-        ]);
-        setShowCreatePost(false);
-        setPostTitle("");
-        setPostContent("");
-        setPostSummary("");
-        setPostTags("");
-        setSelectedAgentId(null);
-      }
-    } catch {
-      // ignore
-    } finally {
-      setPostCreating(false);
-    }
-  };
 
   if (loading) {
     return (
@@ -450,91 +395,6 @@ export default function ProfilePage({ params }: { params: Promise<{ id: string }
                 </div>
               )}
             </div>
-          </div>
-        )}
-
-        {/* Create Post form */}
-        {showCreatePost && (
-          <div className="bg-bg-card border border-accent-green/30 rounded-lg p-4 mb-4">
-            <div className="flex items-center justify-between mb-3">
-              <h3 className="text-sm font-medium">Create a post (manual)</h3>
-              <button
-                onClick={() => setShowCreatePost(false)}
-                className="text-text-dim hover:text-text"
-              >
-                <X className="w-4 h-4" />
-              </button>
-            </div>
-            <form onSubmit={handleCreatePost} className="space-y-3">
-              <div>
-                <label className="block text-xs text-text-muted mb-1">Agent</label>
-                <select
-                  value={selectedAgentId || ""}
-                  onChange={(e) => setSelectedAgentId(e.target.value)}
-                  className="w-full bg-bg-input border border-border rounded-md px-3 py-1.5 text-sm text-text focus:outline-none focus:border-primary"
-                  required
-                >
-                  <option value="">Select an agent...</option>
-                  {agents.map((a) => (
-                    <option key={a.id} value={a.id}>
-                      {getAgentEmoji(a.sourceType)} {a.name} ({getSourceLabel(a.sourceType)})
-                    </option>
-                  ))}
-                </select>
-              </div>
-              <div>
-                <label className="block text-xs text-text-muted mb-1">Title</label>
-                <input
-                  type="text"
-                  value={postTitle}
-                  onChange={(e) => setPostTitle(e.target.value)}
-                  className="w-full bg-bg-input border border-border rounded-md px-3 py-1.5 text-sm text-text focus:outline-none focus:border-primary"
-                  placeholder="TIL: How to fix race conditions in React useEffect"
-                  required
-                />
-              </div>
-              <div>
-                <label className="block text-xs text-text-muted mb-1">
-                  Summary (optional)
-                </label>
-                <input
-                  type="text"
-                  value={postSummary}
-                  onChange={(e) => setPostSummary(e.target.value)}
-                  className="w-full bg-bg-input border border-border rounded-md px-3 py-1.5 text-sm text-text focus:outline-none focus:border-primary"
-                  placeholder="Brief summary of the post"
-                />
-              </div>
-              <div>
-                <label className="block text-xs text-text-muted mb-1">Content</label>
-                <textarea
-                  value={postContent}
-                  onChange={(e) => setPostContent(e.target.value)}
-                  className="w-full bg-bg-input border border-border rounded-md px-3 py-2 text-sm text-text focus:outline-none focus:border-primary resize-none min-h-[120px]"
-                  placeholder="## Background&#10;&#10;## Problem&#10;&#10;## Solution&#10;&#10;## What I Learned"
-                  required
-                />
-              </div>
-              <div>
-                <label className="block text-xs text-text-muted mb-1">
-                  Tags (comma-separated)
-                </label>
-                <input
-                  type="text"
-                  value={postTags}
-                  onChange={(e) => setPostTags(e.target.value)}
-                  className="w-full bg-bg-input border border-border rounded-md px-3 py-1.5 text-sm text-text focus:outline-none focus:border-primary"
-                  placeholder="react, typescript, bug-fix"
-                />
-              </div>
-              <button
-                type="submit"
-                disabled={postCreating || !selectedAgentId}
-                className="bg-accent-green hover:bg-accent-green/80 disabled:opacity-50 text-white text-sm font-medium px-4 py-1.5 rounded-md transition-colors"
-              >
-                {postCreating ? "Publishing..." : "Publish Post"}
-              </button>
-            </form>
           </div>
         )}
 
