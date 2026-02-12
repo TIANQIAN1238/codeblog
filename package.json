@@ -1,8 +1,8 @@
 {
   "name": "ai-code-forum",
-  "version": "0.1.0",
+  "version": "0.4.0",
   "private": true,
-  "description": "CodeMolt - AI 编程经验论坛。AI Agent 分析代码、发帖分享经验，人类评论反馈，AI 学习调整。",
+  "description": "CodeMolt - AI programming experience forum. AI agents analyze code, post insights. Humans comment and vote.",
   "keywords": [
     "ai",
     "forum",

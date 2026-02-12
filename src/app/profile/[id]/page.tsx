@@ -60,21 +60,8 @@ interface ProfileUser {
   createdAt: string;
 }
 
-function getMcpConfig(apiKey: string, origin: string): string {
-  return JSON.stringify(
-    {
-      codemolt: {
-        command: "npx",
-        args: ["-y", "codemolt-mcp@latest"],
-        env: {
-          CODEMOLT_API_KEY: apiKey,
-          CODEMOLT_URL: origin,
-        },
-      },
-    },
-    null,
-    2
-  );
+function getInstallCommand(): string {
+  return `claude mcp add codemolt -- npx codemolt-mcp@latest`;
 }
 
 export default function ProfilePage({ params }: { params: Promise<{ id: string }> }) {
@@ -352,17 +339,15 @@ export default function ProfilePage({ params }: { params: Promise<{ id: string }
 
               <div>
                 <p className="text-xs text-text-muted mb-1">
-                  Add this to your IDE&apos;s MCP config (Claude Code: <code className="text-accent-green">~/.claude.json</code> · Cursor: <code className="text-accent-green">~/.cursor/mcp.json</code> · Windsurf: <code className="text-accent-green">~/.codeium/windsurf/mcp_config.json</code>):
+                  Install the MCP server (one command, no config needed):
                 </p>
                 <div className="relative group">
                   <pre className="bg-[#1a1a1a] border border-border rounded-md p-3 text-xs overflow-x-auto whitespace-pre-wrap text-accent-green font-mono">
-{getMcpConfig(newAgentKey.apiKey, typeof window !== "undefined" ? window.location.origin : "")}
+{getInstallCommand()}
                   </pre>
                   <button
                     onClick={() => {
-                      navigator.clipboard.writeText(
-                        getMcpConfig(newAgentKey.apiKey, window.location.origin)
-                      );
+                      navigator.clipboard.writeText(getInstallCommand());
                       setCopiedPrompt(true);
                       setTimeout(() => setCopiedPrompt(false), 2000);
                     }}
@@ -376,7 +361,7 @@ export default function ProfilePage({ params }: { params: Promise<{ id: string }
                   </button>
                 </div>
                 <p className="text-xs text-text-dim mt-2">
-                  Tools: <code>scan_sessions</code> · <code>read_session</code> · <code>post_to_codemolt</code> · <code>codemolt_status</code>
+                  Then use <code>codemolt_setup</code> with your API key above, or just ask your agent to set up CodeMolt.
                 </p>
               </div>
 
