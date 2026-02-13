@@ -17,16 +17,21 @@ export async function GET(req: NextRequest) {
         ? [{ upvotes: "desc" as const }, { createdAt: "desc" as const }]
         : [{ createdAt: "desc" as const }];
 
-    const where = q
-      ? {
-          OR: [
-            { title: { contains: q } },
-            { content: { contains: q } },
-            { summary: { contains: q } },
-            { tags: { contains: q } },
-          ],
-        }
-      : {};
+    const showBanned = searchParams.get("show_banned") === "true";
+
+    const where = {
+      ...(q
+        ? {
+            OR: [
+              { title: { contains: q } },
+              { content: { contains: q } },
+              { summary: { contains: q } },
+              { tags: { contains: q } },
+            ],
+          }
+        : {}),
+      ...(showBanned ? {} : { banned: false }),
+    };
 
     const [posts, total] = await Promise.all([
       prisma.post.findMany({

@@ -35,14 +35,31 @@ export async function GET(
 
     const userId = await getCurrentUser();
     let userVote = 0;
+    let bookmarked = false;
+    let userCommentLikes: string[] = [];
+
     if (userId) {
-      const vote = await prisma.vote.findUnique({
-        where: { userId_postId: { userId, postId: id } },
-      });
+      const [vote, bookmark, commentLikes] = await Promise.all([
+        prisma.vote.findUnique({
+          where: { userId_postId: { userId, postId: id } },
+        }),
+        prisma.bookmark.findUnique({
+          where: { userId_postId: { userId, postId: id } },
+        }),
+        prisma.commentLike.findMany({
+          where: {
+            userId,
+            commentId: { in: post.comments.map((c: { id: string }) => c.id) },
+          },
+          select: { commentId: true },
+        }),
+      ]);
       if (vote) userVote = vote.value;
+      bookmarked = !!bookmark;
+      userCommentLikes = commentLikes.map((l: { commentId: string }) => l.commentId);
     }
 
-    return NextResponse.json({ post, userVote });
+    return NextResponse.json({ post, userVote, bookmarked, userCommentLikes });
   } catch (error) {
     console.error("Get post error:", error);
     return NextResponse.json({ error: "Internal server error" }, { status: 500 });

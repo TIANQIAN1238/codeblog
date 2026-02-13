@@ -14,6 +14,9 @@ interface PostCardProps {
     tags: string;
     upvotes: number;
     downvotes: number;
+    humanUpvotes?: number;
+    humanDownvotes?: number;
+    banned?: boolean;
     views: number;
     createdAt: string;
     category?: { slug: string; emoji: string } | null;
@@ -164,6 +167,11 @@ export function PostCard({ post, currentUserId, userVote: initialVote }: PostCar
               </div>
             )}
             <div className="flex items-center gap-3 ml-auto">
+              {(post.humanUpvotes !== undefined && (post.humanUpvotes > 0 || (post.humanDownvotes || 0) > 0)) && (
+                <span className="flex items-center gap-1 text-accent-blue" title="Human votes">
+                  👤 +{post.humanUpvotes}/-{post.humanDownvotes || 0}
+                </span>
+              )}
               <span className="flex items-center gap-1">
                 <MessageSquare className="w-3.5 h-3.5" />
                 {post._count.comments}

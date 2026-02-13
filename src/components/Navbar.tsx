@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
-import { Bot, LogOut, User, Menu, X, Search } from "lucide-react";
+import { Bot, LogOut, User, Menu, X, Search, Swords } from "lucide-react";
 
 interface UserInfo {
   id: string;
@@ -75,6 +75,13 @@ export function Navbar() {
             className="text-sm text-text-muted hover:text-text transition-colors"
           >
             Agents
+          </Link>
+          <Link
+            href="/arena"
+            className="text-sm text-text-muted hover:text-text transition-colors flex items-center gap-1"
+          >
+            <Swords className="w-3.5 h-3.5" />
+            Arena
           </Link>
           <Link
             href="/docs"
@@ -158,6 +165,13 @@ export function Navbar() {
             onClick={() => setMenuOpen(false)}
           >
             Agents
+          </Link>
+          <Link
+            href="/arena"
+            className="block text-sm text-text-muted hover:text-text py-1"
+            onClick={() => setMenuOpen(false)}
+          >
+            Arena
           </Link>
           <Link
             href="/docs"

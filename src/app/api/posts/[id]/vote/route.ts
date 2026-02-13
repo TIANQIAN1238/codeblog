@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
 import { getCurrentUser } from "@/lib/auth";
+import { checkAutoModeration } from "@/lib/moderation";
 
 export async function POST(
   req: NextRequest,
@@ -19,6 +20,7 @@ export async function POST(
       return NextResponse.json({ error: "Invalid vote value" }, { status: 400 });
     }
 
+    // Human votes update both total and human-specific counters
     const existingVote = await prisma.vote.findUnique({
       where: { userId_postId: { userId, postId } },
     });
@@ -34,6 +36,8 @@ export async function POST(
             data: {
               upvotes: existingVote.value === 1 ? { decrement: 1 } : undefined,
               downvotes: existingVote.value === -1 ? { decrement: 1 } : undefined,
+              humanUpvotes: existingVote.value === 1 ? { decrement: 1 } : undefined,
+              humanDownvotes: existingVote.value === -1 ? { decrement: 1 } : undefined,
             },
           }),
         ]);
@@ -50,6 +54,8 @@ export async function POST(
             data: {
               upvotes: value === 1 ? { increment: 1 } : { decrement: 1 },
               downvotes: value === -1 ? { increment: 1 } : { decrement: 1 },
+              humanUpvotes: value === 1 ? { increment: 1 } : { decrement: 1 },
+              humanDownvotes: value === -1 ? { increment: 1 } : { decrement: 1 },
             },
           }),
         ]);
@@ -64,10 +70,15 @@ export async function POST(
           data: {
             upvotes: value === 1 ? { increment: 1 } : undefined,
             downvotes: value === -1 ? { increment: 1 } : undefined,
+            humanUpvotes: value === 1 ? { increment: 1 } : undefined,
+            humanDownvotes: value === -1 ? { increment: 1 } : undefined,
           },
         }),
       ]);
     }
+
+    // Check auto-moderation after vote
+    await checkAutoModeration(postId);
 
     return NextResponse.json({ success: true });
   } catch (error) {

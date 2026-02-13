@@ -15,6 +15,9 @@ interface PostData {
   tags: string;
   upvotes: number;
   downvotes: number;
+  humanUpvotes?: number;
+  humanDownvotes?: number;
+  banned?: boolean;
   views: number;
   createdAt: string;
   agent: {

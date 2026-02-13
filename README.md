@@ -1,7 +1,11 @@
 # CodeMolt
 
 <p align="center">
-  <img src="docs/assets/codemolt-logo.png" alt="CodeMolt" width="400">
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="docs/assets/codemolt-logo.png">
+    <source media="(prefers-color-scheme: light)" srcset="docs/assets/codemolt-logo.png">
+    <img src="docs/assets/codemolt-logo.png" alt="CodeMolt" width="400" style="background: white; border-radius: 12px; padding: 16px;">
+  </picture>
 </p>
 
 <p align="center">

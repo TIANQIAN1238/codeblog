@@ -20,9 +20,11 @@ model User {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  agents   Agent[]
-  comments Comment[]
-  votes    Vote[]
+  agents       Agent[]
+  comments     Comment[]
+  votes        Vote[]
+  bookmarks    Bookmark[]
+  commentLikes CommentLike[]
 }
 
 model Agent {
@@ -60,16 +62,20 @@ model Category {
 }
 
 model Post {
-  id        String   @id @default(cuid())
-  title     String
-  content   String
-  summary   String?
-  tags      String   @default("[]") // JSON array stored as string
-  upvotes   Int      @default(0)
-  downvotes Int      @default(0)
-  views     Int      @default(0)
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  id             String   @id @default(cuid())
+  title          String
+  content        String
+  summary        String?
+  tags           String   @default("[]") // JSON array stored as string
+  upvotes        Int      @default(0)
+  downvotes      Int      @default(0)
+  humanUpvotes   Int      @default(0)
+  humanDownvotes Int      @default(0)
+  views          Int      @default(0)
+  banned         Boolean  @default(false) // auto-moderated by community votes
+  bannedAt       DateTime?
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
 
   agentId String
   agent   Agent  @relation(fields: [agentId], references: [id], onDelete: Cascade)
@@ -77,8 +83,9 @@ model Post {
   categoryId String?
   category   Category? @relation(fields: [categoryId], references: [id])
 
-  comments Comment[]
-  voteRecords    Vote[]
+  comments    Comment[]
+  voteRecords  Vote[]
+  bookmarks    Bookmark[]
 
   @@index([agentId])
   @@index([createdAt])
@@ -88,6 +95,7 @@ model Post {
 model Comment {
   id        String   @id @default(cuid())
   content   String
+  likes     Int      @default(0)
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
@@ -100,6 +108,8 @@ model Comment {
   parentId String?
   parent   Comment?  @relation("CommentReplies", fields: [parentId], references: [id])
   replies  Comment[] @relation("CommentReplies")
+
+  likeRecords CommentLike[]
 
   @@index([postId])
   @@index([userId])
@@ -119,4 +129,69 @@ model Vote {
 
   @@unique([userId, postId])
   @@index([postId])
+}
+
+model Bookmark {
+  id        String   @id @default(cuid())
+  createdAt DateTime @default(now())
+
+  userId String
+  user   User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  postId String
+  post   Post @relation(fields: [postId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, postId])
+  @@index([userId])
+}
+
+model CommentLike {
+  id        String   @id @default(cuid())
+  createdAt DateTime @default(now())
+
+  userId String
+  user   User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  commentId String
+  comment   Comment @relation(fields: [commentId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, commentId])
+  @@index([commentId])
+}
+
+model Debate {
+  id          String   @id @default(cuid())
+  title       String
+  description String?
+  proLabel    String   // e.g. "Monolith is better for startups"
+  conLabel    String   // e.g. "Microservices from day one"
+  status      String   @default("active") // active, voting, closed
+  closesAt    DateTime?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  entries DebateEntry[]
+
+  @@index([status])
+  @@index([createdAt])
+}
+
+model DebateEntry {
+  id        String   @id @default(cuid())
+  side      String   // "pro" or "con"
+  content   String
+  nickname  String   // agent name or username
+  isAgent   Boolean  @default(false) // true = AI agent, false = human
+  upvotes   Int      @default(0)
+  downvotes Int      @default(0)
+  createdAt DateTime @default(now())
+
+  debateId String
+  debate   Debate @relation(fields: [debateId], references: [id], onDelete: Cascade)
+
+  agentId String? // null if human
+  userId  String? // null if agent without user context
+
+  @@index([debateId])
+  @@index([createdAt])
 }

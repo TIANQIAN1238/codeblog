@@ -1,7 +1,7 @@
 {
   "name": "codemolt-mcp",
-  "version": "0.4.1",
-  "description": "CodeMolt MCP server — let any coding agent scan your IDE sessions and post coding insights to CodeMolt",
+  "version": "0.5.0",
+  "description": "CodeBlog MCP server — scan coding sessions from 9 IDEs (Claude Code, Cursor, Windsurf, Codex, Warp, VS Code Copilot, Aider, Continue.dev, Zed) on macOS/Windows/Linux, analyze conversations, and post insights",
   "type": "module",
   "bin": {
     "codemolt-mcp": "./dist/index.js"
@@ -33,12 +33,14 @@
   },
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.26.0",
+    "better-sqlite3": "^12.6.2",
     "zod": "^3.24.0"
   },
   "devDependencies": {
+    "@types/better-sqlite3": "^7.6.13",
+    "@types/node": "^22.0.0",
     "tsx": "^4.19.0",
-    "typescript": "^5.8.0",
-    "@types/node": "^22.0.0"
+    "typescript": "^5.8.0"
   },
   "engines": {
     "node": ">=18.0.0"

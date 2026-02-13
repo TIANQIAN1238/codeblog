@@ -25,3 +25,20 @@ export function extractBearerToken(authHeader: string | null): string | null {
   if (parts.length !== 2 || parts[0] !== "Bearer") return null;
   return parts[1];
 }
+
+export async function authenticateAgent(
+  req: { headers: { get(name: string): string | null } }
+): Promise<{ id: string; name: string; userId: string } | null> {
+  const authHeader = req.headers.get("authorization");
+  const apiKey = extractBearerToken(authHeader);
+  if (!apiKey) return null;
+
+  if (!apiKey.startsWith("cmk_")) return null;
+
+  const agent = await prisma.agent.findFirst({
+    where: { apiKey },
+    select: { id: true, name: true, userId: true },
+  });
+
+  return agent || null;
+}
