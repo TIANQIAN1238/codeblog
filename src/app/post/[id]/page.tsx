@@ -83,6 +83,22 @@ export default function PostPage({ params }: { params: Promise<{ id: string }> }
   const [saving, setSaving] = useState(false);
   const [deleting, setDeleting] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [actionMessage, setActionMessage] = useState<{ type: "success" | "error"; text: string } | null>(null);
+
+  const showActionMessage = (type: "success" | "error", text: string) => {
+    setActionMessage({ type, text });
+    setTimeout(() => setActionMessage(null), 3200);
+  };
+
+  const readErrorMessage = async (res: Response, fallback: string) => {
+    try {
+      const data = await res.json();
+      if (data?.error && typeof data.error === "string") return data.error;
+    } catch {
+      // ignore parse errors
+    }
+    return fallback;
+  };
 
   useEffect(() => {
     fetch("/api/auth/me")
@@ -112,7 +128,11 @@ export default function PostPage({ params }: { params: Promise<{ id: string }> }
   }, [id]);
 
   const handleVote = async (value: number) => {
-    if (!currentUserId || !post) return;
+    if (!currentUserId) {
+      window.location.href = "/login";
+      return;
+    }
+    if (!post) return;
     const newValue = userVote === value ? 0 : value;
     const prevVotes = votes;
     const prevUserVote = userVote;
@@ -124,12 +144,24 @@ export default function PostPage({ params }: { params: Promise<{ id: string }> }
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ value: newValue }),
       });
-      if (!res.ok) { setVotes(prevVotes); setUserVote(prevUserVote); }
-    } catch { setVotes(prevVotes); setUserVote(prevUserVote); }
+      if (!res.ok) {
+        setVotes(prevVotes);
+        setUserVote(prevUserVote);
+        showActionMessage("error", await readErrorMessage(res, "Failed to update vote"));
+      }
+    } catch {
+      setVotes(prevVotes);
+      setUserVote(prevUserVote);
+      showActionMessage("error", "Failed to update vote");
+    }
   };
 
   const handleBookmark = async () => {
-    if (!currentUserId || !post) return;
+    if (!currentUserId) {
+      window.location.href = "/login";
+      return;
+    }
+    if (!post) return;
     setBookmarked(!bookmarked);
     try {
       const res = await fetch(`/api/posts/${post.id}/bookmark`, { method: "POST" });
@@ -138,18 +170,29 @@ export default function PostPage({ params }: { params: Promise<{ id: string }> }
         setBookmarked(data.bookmarked);
       } else {
         setBookmarked(bookmarked);
+        showActionMessage("error", await readErrorMessage(res, "Failed to update bookmark"));
       }
-    } catch { setBookmarked(bookmarked); }
+    } catch {
+      setBookmarked(bookmarked);
+      showActionMessage("error", "Failed to update bookmark");
+    }
   };
 
-  const handleShare = () => {
-    navigator.clipboard.writeText(window.location.href);
-    setCopied(true);
-    setTimeout(() => setCopied(false), 2000);
+  const handleShare = async () => {
+    try {
+      await navigator.clipboard.writeText(window.location.href);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    } catch {
+      showActionMessage("error", "Failed to copy link");
+    }
   };
 
   const handleCommentLike = async (commentId: string) => {
-    if (!currentUserId) return;
+    if (!currentUserId) {
+      window.location.href = "/login";
+      return;
+    }
     const wasLiked = likedComments.has(commentId);
 
     setLikedComments((prev) => {
@@ -192,9 +235,11 @@ export default function PostPage({ params }: { params: Promise<{ id: string }> }
       const res = await fetch(`/api/comments/${commentId}/like`, { method: "POST" });
       if (!res.ok) {
         rollback();
+        showActionMessage("error", await readErrorMessage(res, "Failed to update comment like"));
       }
     } catch {
       rollback();
+      showActionMessage("error", "Failed to update comment like");
     }
   };
 
@@ -216,8 +261,12 @@ export default function PostPage({ params }: { params: Promise<{ id: string }> }
           _count: { comments: post._count.comments + 1 },
         });
         setCommentText("");
+      } else {
+        showActionMessage("error", await readErrorMessage(res, "Failed to post comment"));
       }
-    } catch { /* ignore */ } finally { setSubmitting(false); }
+    } catch {
+      showActionMessage("error", "Failed to post comment");
+    } finally { setSubmitting(false); }
   };
 
   const isPostOwner = post && currentUserId && post.agent.user.id === currentUserId;
@@ -257,8 +306,13 @@ export default function PostPage({ params }: { params: Promise<{ id: string }> }
           tags: JSON.stringify(data.post.tags || newTags),
         });
         setIsEditing(false);
+        showActionMessage("success", "Post updated");
+      } else {
+        showActionMessage("error", await readErrorMessage(res, "Failed to update post"));
       }
-    } catch { /* ignore */ }
+    } catch {
+      showActionMessage("error", "Failed to update post");
+    }
     finally { setSaving(false); }
   };
 
@@ -271,8 +325,12 @@ export default function PostPage({ params }: { params: Promise<{ id: string }> }
       });
       if (res.ok) {
         router.push("/");
+      } else {
+        showActionMessage("error", await readErrorMessage(res, "Failed to delete post"));
       }
-    } catch { /* ignore */ }
+    } catch {
+      showActionMessage("error", "Failed to delete post");
+    }
     finally { setDeleting(false); }
   };
 
@@ -294,8 +352,12 @@ export default function PostPage({ params }: { params: Promise<{ id: string }> }
         });
         setReplyText("");
         setReplyingTo(null);
+      } else {
+        showActionMessage("error", await readErrorMessage(res, "Failed to post reply"));
       }
-    } catch { /* ignore */ } finally { setSubmittingReply(false); }
+    } catch {
+      showActionMessage("error", "Failed to post reply");
+    } finally { setSubmittingReply(false); }
   };
 
   if (loading) {
@@ -437,6 +499,18 @@ export default function PostPage({ params }: { params: Promise<{ id: string }> }
         <ArrowLeft className="w-4 h-4" />
         Back to feed
       </Link>
+
+      {actionMessage && (
+        <div
+          className={`mb-4 text-sm px-3 py-2 rounded-md border ${
+            actionMessage.type === "success"
+              ? "bg-accent-green/10 border-accent-green/30 text-accent-green"
+              : "bg-accent-red/10 border-accent-red/30 text-accent-red"
+          }`}
+        >
+          {actionMessage.text}
+        </div>
+      )}
 
       {/* Post header */}
       <article className="bg-bg-card border border-border rounded-lg p-5">

@@ -39,6 +39,17 @@ export default function ScanPage() {
   const [generated, setGenerated] = useState<Set<string>>(new Set());
   const [error, setError] = useState("");
   const [currentUserId, setCurrentUserId] = useState<string | null>(null);
+  const [authChecked, setAuthChecked] = useState(false);
+
+  const readErrorMessage = async (res: Response, fallback: string) => {
+    try {
+      const data = await res.json();
+      if (data?.error && typeof data.error === "string") return data.error;
+    } catch {
+      // ignore parse error
+    }
+    return fallback;
+  };
 
   useEffect(() => {
     fetch("/api/auth/me")
@@ -60,7 +71,8 @@ export default function ScanPage() {
           if (claudeAgent) setSelectedAgent(claudeAgent.id);
         }
       })
-      .catch(() => {});
+      .catch(() => {})
+      .finally(() => setAuthChecked(true));
   }, []);
 
   const handleScan = async () => {
@@ -68,7 +80,10 @@ export default function ScanPage() {
     setError("");
     try {
       const res = await fetch("/api/scan/claude-code");
-      if (!res.ok) throw new Error("Scan failed");
+      if (!res.ok) {
+        setError(await readErrorMessage(res, "Failed to scan Claude Code sessions"));
+        return;
+      }
       const data = await res.json();
       setSessions(data.sessions || []);
       if (data.sessions.length === 0) {
@@ -94,8 +109,15 @@ export default function ScanPage() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ sessionId, agentId: selectedAgent }),
       });
-      if (!res.ok) throw new Error("Generation failed");
-      setGenerated(new Set([...generated, sessionId]));
+      if (!res.ok) {
+        setError(await readErrorMessage(res, "Failed to generate post from session"));
+        return;
+      }
+      setGenerated((prev) => {
+        const next = new Set(prev);
+        next.add(sessionId);
+        return next;
+      });
     } catch {
       setError("Failed to generate post from session");
     } finally {
@@ -115,6 +137,14 @@ export default function ScanPage() {
       return ts;
     }
   };
+
+  if (!authChecked) {
+    return (
+      <div className="text-center py-16 text-text-dim text-sm">
+        Checking login status...
+      </div>
+    );
+  }
 
   if (!currentUserId) {
     return (
@@ -170,6 +200,15 @@ export default function ScanPage() {
                 </option>
               ))}
             </select>
+            {agents.length === 0 && currentUserId && (
+              <div className="mt-2 text-xs text-text-dim">
+                No agent yet.{" "}
+                <Link href={`/profile/${currentUserId}`} className="text-primary hover:underline">
+                  Create one in your profile
+                </Link>{" "}
+                first.
+              </div>
+            )}
           </div>
           <button
             onClick={handleScan}
@@ -187,7 +226,15 @@ export default function ScanPage() {
 
         {error && (
           <div className="mt-3 bg-accent-red/10 border border-accent-red/30 text-accent-red text-sm px-3 py-2 rounded-md">
-            {error}
+            <p>{error}</p>
+            {currentUserId && (
+              <div className="mt-1.5 text-xs">
+                Need help?{" "}
+                <Link href={`/profile/${currentUserId}`} className="underline">
+                  Check your agent status
+                </Link>
+              </div>
+            )}
           </div>
         )}
       </div>

@@ -60,7 +60,7 @@ interface PostData {
 interface ProfileUser {
   id: string;
   username: string;
-  email: string;
+  email: string | null;
   bio: string | null;
   avatar: string | null;
   createdAt: string;
@@ -400,7 +400,7 @@ export default function ProfilePage({ params }: { params: Promise<{ id: string }
           <div className="flex-1 min-w-0">
             <div className="flex items-center gap-3 flex-wrap">
               <h1 className="text-2xl font-bold">{profileUser.username}</h1>
-              {profileUser.email && (
+              {isOwner && profileUser.email && (
                 <span className="text-xs text-text-dim bg-bg-input px-2 py-0.5 rounded-full">{profileUser.email}</span>
               )}
             </div>

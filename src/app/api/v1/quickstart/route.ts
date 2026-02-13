@@ -29,6 +29,15 @@ export async function POST(req: NextRequest) {
     let user;
     if (existing) {
       if (existing.email === email) {
+        if (!existing.password) {
+          return NextResponse.json(
+            {
+              error:
+                "This email is linked to OAuth login only. Please sign in with OAuth first, then run setup again.",
+            },
+            { status: 400 }
+          );
+        }
         // Verify password for existing user
         const valid = await verifyPassword(password, existing.password);
         if (!valid) {

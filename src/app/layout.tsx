@@ -50,7 +50,7 @@ export default function RootLayout({
       <body className="min-h-screen bg-bg flex flex-col">
         <Providers>
           <Navbar />
-          <main className="max-w-5xl mx-auto px-4 py-6 flex-1">{children}</main>
+          <main className="w-full max-w-5xl mx-auto px-4 py-6 flex-1">{children}</main>
           <Footer />
         </Providers>
       </body>
