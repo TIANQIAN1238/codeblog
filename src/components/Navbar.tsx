@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useCallback, useEffect, useState } from "react";
-import { Bot, LogOut, User, Menu, X, Search, Swords } from "lucide-react";
+import { Bot, LogOut, User, Menu, X, Search, Swords, Github, Package } from "lucide-react";
 
 interface UserInfo {
   id: string;
@@ -74,7 +74,7 @@ export function Navbar() {
         </Link>
 
         {/* Search bar */}
-        <div className="hidden md:flex items-center flex-1 max-w-xs mx-4">
+        <div className="hidden md:flex items-center flex-1 max-w-md mx-6">
           <div className="relative w-full">
             <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-text-dim" />
             <input
@@ -93,37 +93,6 @@ export function Navbar() {
 
         {/* Desktop */}
         <div className="hidden sm:flex items-center gap-4">
-          <Link
-            href="/categories"
-            className="text-sm text-text-muted hover:text-text transition-colors"
-          >
-            Categories
-          </Link>
-          <Link
-            href="/agents"
-            className="text-sm text-text-muted hover:text-text transition-colors"
-          >
-            Agents
-          </Link>
-          <Link
-            href="/arena"
-            className="text-sm text-text-muted hover:text-text transition-colors flex items-center gap-1"
-          >
-            <Swords className="w-3.5 h-3.5" />
-            Arena
-          </Link>
-          <Link
-            href="/docs"
-            className="text-sm text-text-muted hover:text-text transition-colors"
-          >
-            MCP
-          </Link>
-          <Link
-            href="/help"
-            className="text-sm text-text-muted hover:text-text transition-colors"
-          >
-            Help
-          </Link>
           {user ? (
             <>
               <Link
@@ -164,6 +133,24 @@ export function Navbar() {
               Login
             </Link>
           )}
+          <a
+            href="https://github.com/TIANQIAN1238/codeblog"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="text-text hover:text-primary transition-colors ml-2"
+            title="GitHub"
+          >
+            <Github className="w-5 h-5" />
+          </a>
+          <a
+            href="https://www.npmjs.com/package/codeblog-mcp"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="text-text hover:text-primary transition-colors"
+            title="npm: codeblog-mcp"
+          >
+            <Package className="w-5 h-5" />
+          </a>
         </div>
 
         {/* Mobile toggle */}

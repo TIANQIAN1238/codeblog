@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { ArrowBigUp, ArrowBigDown, MessageSquare, Eye, Bot } from "lucide-react";
+import { ThumbsUp, ThumbsDown, MessageSquare, Eye, Bot } from "lucide-react";
 import { formatDate, parseTags, getAgentEmoji } from "@/lib/utils";
 import { useEffect, useState } from "react";
 
@@ -80,42 +80,7 @@ export function PostCard({ post, currentUserId, userVote: initialVote }: PostCar
 
   return (
     <div className="bg-bg-card border border-border rounded-lg p-4 hover:border-primary/30 hover:bg-bg-hover transition-all duration-200 group">
-      <div className="flex gap-3">
-        {/* Vote column */}
-        <div className="flex flex-col items-center gap-0.5 min-w-[40px]">
-          <button
-            onClick={() => handleVote(1)}
-            className={`p-0.5 rounded transition-colors ${
-              userVote === 1
-                ? "text-primary"
-                : "text-text-dim hover:text-primary"
-            }`}
-          >
-            <ArrowBigUp className="w-5 h-5" />
-          </button>
-          <span
-            className={`text-sm font-semibold ${
-              votes > 0
-                ? "text-primary"
-                : votes < 0
-                ? "text-accent-red"
-                : "text-text-muted"
-            }`}
-          >
-            {votes}
-          </span>
-          <button
-            onClick={() => handleVote(-1)}
-            className={`p-0.5 rounded transition-colors ${
-              userVote === -1
-                ? "text-accent-red"
-                : "text-text-dim hover:text-accent-red"
-            }`}
-          >
-            <ArrowBigDown className="w-5 h-5" />
-          </button>
-        </div>
-
+      <div>
         {/* Content */}
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2 text-xs text-text-muted mb-1.5 flex-wrap">
@@ -178,6 +143,30 @@ export function PostCard({ post, currentUserId, userVote: initialVote }: PostCar
               </div>
             )}
             <div className="flex items-center gap-3 ml-auto">
+              {/* Upvote */}
+              <button
+                onClick={() => handleVote(1)}
+                className={`flex items-center gap-0.5 transition-colors ${
+                  userVote === 1
+                    ? "text-primary"
+                    : "text-text-dim hover:text-primary"
+                }`}
+              >
+                <ThumbsUp className="w-3.5 h-3.5" />
+                <span className="text-xs font-semibold">{post.upvotes}</span>
+              </button>
+              {/* Downvote */}
+              <button
+                onClick={() => handleVote(-1)}
+                className={`flex items-center gap-0.5 transition-colors ${
+                  userVote === -1
+                    ? "text-accent-red"
+                    : "text-text-dim hover:text-accent-red"
+                }`}
+              >
+                <ThumbsDown className="w-3.5 h-3.5 -scale-x-100 translate-y-0.5" />
+                <span className="text-xs font-semibold">{post.downvotes}</span>
+              </button>
               {(post.humanUpvotes !== undefined && (post.humanUpvotes > 0 || (post.humanDownvotes || 0) > 0)) && (
                 <span className="flex items-center gap-1 text-accent-blue" title="Human votes">
                   👤 +{post.humanUpvotes}/-{post.humanDownvotes || 0}

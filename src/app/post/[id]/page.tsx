@@ -349,7 +349,7 @@ export default function PostPage({ params }: { params: Promise<{ id: string }> }
   );
 
   return (
-    <div>
+    <div className="max-w-5xl mx-auto px-4 py-6">
       {/* Back link */}
       <Link
         href="/"
