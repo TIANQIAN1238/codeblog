@@ -32,7 +32,7 @@ export function Navbar() {
   };
 
   return (
-    <nav className="sticky top-0 z-50 border-b border-border bg-bg/80 backdrop-blur-md">
+    <nav className="sticky top-0 z-50 border-b border-border bg-bg/90 backdrop-blur-xl">
       <div className="max-w-5xl mx-auto px-4 h-14 flex items-center justify-between">
         <Link href="/" className="flex items-center gap-2 group">
           <Bot className="w-6 h-6 text-primary group-hover:text-primary-light transition-colors" />
@@ -51,7 +51,7 @@ export function Navbar() {
             <input
               type="text"
               placeholder="Search posts..."
-              className="w-full bg-bg-input border border-border rounded-md pl-8 pr-3 py-1.5 text-sm text-text placeholder:text-text-dim focus:outline-none focus:border-primary/50 transition-colors"
+              className="w-full bg-bg-input border border-border rounded-md pl-8 pr-3 py-1.5 text-sm text-text placeholder:text-text-dim focus:outline-none focus:border-primary/50 focus:ring-1 focus:ring-primary/20 transition-all duration-200"
               onKeyDown={(e) => {
                 if (e.key === "Enter") {
                   const q = (e.target as HTMLInputElement).value.trim();
@@ -126,7 +126,7 @@ export function Navbar() {
           ) : (
             <Link
               href="/login"
-              className="text-sm bg-primary hover:bg-primary-dark text-white px-3 py-1.5 rounded-md transition-colors font-medium"
+              className="text-sm bg-primary hover:bg-primary-dark text-white px-3.5 py-1.5 rounded-md transition-all duration-200 font-medium shadow-sm hover:shadow-md hover:shadow-primary/20"
             >
               Login
             </Link>

@@ -4,23 +4,27 @@
   --color-primary: #f97316;
   --color-primary-dark: #ea580c;
   --color-primary-light: #fdba74;
-  --color-bg: #0f0f0f;
-  --color-bg-card: #1a1a1a;
-  --color-bg-hover: #252525;
-  --color-bg-input: #2a2a2a;
-  --color-border: #333333;
-  --color-text: #e5e5e5;
-  --color-text-muted: #888888;
-  --color-text-dim: #666666;
+  --color-bg: #0a0a0a;
+  --color-bg-primary: #0a0a0a;
+  --color-bg-card: #141414;
+  --color-bg-hover: #1c1c1c;
+  --color-bg-input: #1e1e1e;
+  --color-border: #262626;
+  --color-text: #fafafa;
+  --color-text-muted: #a1a1aa;
+  --color-text-dim: #71717a;
   --color-accent-green: #22c55e;
   --color-accent-red: #ef4444;
   --color-accent-blue: #3b82f6;
+  --color-ring: rgba(249, 115, 22, 0.4);
 }
 
 body {
   background-color: var(--color-bg);
   color: var(--color-text);
   font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
 }
 
 ::selection {
@@ -28,14 +32,43 @@ body {
   color: white;
 }
 
+/* Focus ring — shadcn style */
+*:focus-visible {
+  outline: 2px solid var(--color-ring);
+  outline-offset: 2px;
+}
+
+/* Smooth skeleton shimmer animation */
+@keyframes shimmer {
+  0% { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
+}
+
+.animate-pulse {
+  animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+
 /* Scrollbar */
 ::-webkit-scrollbar {
   width: 6px;
+  height: 6px;
 }
 ::-webkit-scrollbar-track {
-  background: var(--color-bg);
+  background: transparent;
 }
 ::-webkit-scrollbar-thumb {
   background: var(--color-border);
-  border-radius: 3px;
+  border-radius: 9999px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: var(--color-text-dim);
+}
+
+/* Hide scrollbar utility */
+.scrollbar-hide::-webkit-scrollbar {
+  display: none;
+}
+.scrollbar-hide {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
 }
