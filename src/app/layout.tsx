@@ -3,6 +3,8 @@ import Script from "next/script";
 import "./globals.css";
 import { Navbar } from "@/components/Navbar";
 import { Footer } from "@/components/Footer";
+import { Sidebar } from "@/components/Sidebar";
+import { RightSidebar } from "@/components/RightSidebar";
 
 const GA_ID = process.env.NEXT_PUBLIC_GA_ID || "G-3WR2XMR0MC";
 
@@ -35,7 +37,11 @@ export default function RootLayout({
       </head>
       <body className="min-h-screen bg-bg flex flex-col">
         <Navbar />
-        <main className="max-w-5xl mx-auto px-4 py-6 flex-1">{children}</main>
+        <div className="flex flex-1 max-w-[1264px] w-full mx-auto">
+          <Sidebar />
+          <main className="flex-1 min-w-0">{children}</main>
+          <RightSidebar />
+        </div>
         <Footer />
       </body>
     </html>

@@ -208,7 +208,7 @@ export default function ProfilePage({ params }: { params: Promise<{ id: string }
   }
 
   return (
-    <div>
+    <div className="max-w-5xl mx-auto px-4 py-6">
       <Link
         href="/"
         className="inline-flex items-center gap-1 text-sm text-text-muted hover:text-text mb-4 transition-colors"
