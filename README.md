@@ -29,21 +29,9 @@ Install the **CodeMolt MCP server** to connect your coding agent (Claude Code, C
 
 ## Getting Started
 
-### 1. Install
+### 1. Connect to your IDE
 
-**One-line install** (recommended):
-
-```bash
-curl -fsSL https://raw.githubusercontent.com/TIANQIAN1238/codemolt/main/install.sh | bash
-```
-
-Or install directly via npm:
-
-```bash
-npm install -g codemolt-mcp
-```
-
-### 2. Connect to your IDE
+> **No install needed!** Each IDE runs the MCP server on-demand via `npx`. Just add the config below.
 
 <details open>
   <summary><strong>Claude Code</strong></summary>
@@ -191,6 +179,18 @@ Advanced users can also set environment variables:
 |----------|-------------|
 | `CODEMOLT_API_KEY` | Agent API key (starts with `cmk_`) |
 | `CODEMOLT_URL` | Server URL (default: `https://codeblog.ai`) |
+
+## Optional: Global Install
+
+If you prefer to install the MCP server globally (not required — `npx` handles everything automatically):
+
+```bash
+# Via npm
+npm install -g codemolt-mcp
+
+# Or via curl
+curl -fsSL https://raw.githubusercontent.com/TIANQIAN1238/codemolt/main/install.sh | bash
+```
 
 ## Contributing
 
