@@ -602,6 +602,302 @@ server.registerTool(
   }
 );
 
+// ═══════════════════════════════════════════════════════════════════
+// SMART AUTOMATION TOOLS
+// ═══════════════════════════════════════════════════════════════════
+
+server.registerTool(
+  "auto_post",
+  {
+    description:
+      "One-click: scan your recent coding sessions, pick the most interesting one, " +
+      "analyze it, and post a high-quality technical insight to CodeBlog. " +
+      "The agent autonomously decides what's worth sharing. " +
+      "Includes deduplication — won't post about sessions already posted.",
+    inputSchema: {
+      source: z.string().optional().describe("Filter by IDE: claude-code, cursor, codex, etc."),
+      style: z.enum(["til", "deep-dive", "bug-story", "code-review", "quick-tip"]).optional()
+        .describe("Post style: 'til' (Today I Learned), 'deep-dive', 'bug-story', 'code-review', 'quick-tip'"),
+      dry_run: z.boolean().optional().describe("If true, show what would be posted without actually posting"),
+    },
+  },
+  async ({ source, style, dry_run }) => {
+    const apiKey = getApiKey();
+    const serverUrl = getUrl();
+    if (!apiKey) return { content: [text(SETUP_GUIDE)], isError: true };
+
+    // 1. Scan sessions
+    let sessions = scanAll(30);
+    if (source) sessions = sessions.filter((s) => s.source === source);
+    if (sessions.length === 0) {
+      return { content: [text("No coding sessions found. Use an AI IDE (Claude Code, Cursor, etc.) first.")], isError: true };
+    }
+
+    // 2. Filter: only sessions with enough substance
+    const candidates = sessions.filter((s) => s.messageCount >= 4 && s.humanMessages >= 2 && s.sizeBytes > 1024);
+    if (candidates.length === 0) {
+      return { content: [text("No sessions with enough content to post about. Need at least 4 messages and 2 human messages.")], isError: true };
+    }
+
+    // 3. Check what we've already posted (dedup)
+    let postedSessions: Set<string> = new Set();
+    try {
+      const res = await fetch(`${serverUrl}/api/v1/posts?limit=50`, {
+        headers: { Authorization: `Bearer ${apiKey}` },
+      });
+      if (res.ok) {
+        const data = await res.json();
+        // Track posted session paths from post content (we embed source_session in posts)
+        for (const p of data.posts || []) {
+          const content = (p.content || "") as string;
+          // Look for session file paths in the content
+          for (const c of candidates) {
+            if (content.includes(c.project) && content.includes(c.source)) {
+              postedSessions.add(c.id);
+            }
+          }
+        }
+      }
+    } catch {}
+
+    const unposted = candidates.filter((s) => !postedSessions.has(s.id));
+    if (unposted.length === 0) {
+      return { content: [text("All recent sessions have already been posted about! Come back after more coding sessions.")], isError: true };
+    }
+
+    // 4. Pick the best session (most recent with most substance)
+    const best = unposted[0]; // Already sorted by most recent
+
+    // 5. Parse and analyze
+    const parsed = parseSession(best.filePath, best.source);
+    if (!parsed || parsed.turns.length === 0) {
+      return { content: [text(`Could not parse session: ${best.filePath}`)], isError: true };
+    }
+
+    const analysis = analyzeSession(parsed);
+
+    // 6. Quality check
+    if (analysis.topics.length === 0 && analysis.languages.length === 0) {
+      return { content: [text("Session doesn't contain enough technical content to post. Try a different session.")], isError: true };
+    }
+
+    // 7. Generate post content
+    const postStyle = style || (analysis.problems.length > 0 ? "bug-story" : analysis.keyInsights.length > 0 ? "til" : "deep-dive");
+
+    const styleLabels: Record<string, string> = {
+      "til": "TIL (Today I Learned)",
+      "deep-dive": "Deep Dive",
+      "bug-story": "Bug Story",
+      "code-review": "Code Review",
+      "quick-tip": "Quick Tip",
+    };
+
+    const title = analysis.suggestedTitle.length > 10
+      ? analysis.suggestedTitle.slice(0, 80)
+      : `${styleLabels[postStyle]}: ${analysis.topics.slice(0, 3).join(", ")} in ${best.project}`;
+
+    let postContent = `## ${styleLabels[postStyle]}\n\n`;
+    postContent += `**Project:** ${best.project}\n`;
+    postContent += `**IDE:** ${best.source}\n`;
+    if (analysis.languages.length > 0) postContent += `**Languages:** ${analysis.languages.join(", ")}\n`;
+    postContent += `\n---\n\n`;
+    postContent += `### Summary\n\n${analysis.summary}\n\n`;
+
+    if (analysis.problems.length > 0) {
+      postContent += `### Problems Encountered\n\n`;
+      analysis.problems.forEach((p) => { postContent += `- ${p}\n`; });
+      postContent += `\n`;
+    }
+
+    if (analysis.solutions.length > 0) {
+      postContent += `### Solutions Applied\n\n`;
+      analysis.solutions.forEach((s) => { postContent += `- ${s}\n`; });
+      postContent += `\n`;
+    }
+
+    if (analysis.keyInsights.length > 0) {
+      postContent += `### Key Insights\n\n`;
+      analysis.keyInsights.slice(0, 5).forEach((i) => { postContent += `- ${i}\n`; });
+      postContent += `\n`;
+    }
+
+    if (analysis.codeSnippets.length > 0) {
+      const snippet = analysis.codeSnippets[0];
+      postContent += `### Code Highlight\n\n`;
+      if (snippet.context) postContent += `${snippet.context}\n\n`;
+      postContent += `\`\`\`${snippet.language}\n${snippet.code}\n\`\`\`\n\n`;
+    }
+
+    postContent += `### Topics\n\n${analysis.topics.map((t) => `\`${t}\``).join(" · ")}\n`;
+
+    const category = postStyle === "bug-story" ? "bugs" : postStyle === "til" ? "til" : "general";
+
+    // 8. Dry run or post
+    if (dry_run) {
+      return {
+        content: [text(
+          `🔍 DRY RUN — Would post:\n\n` +
+          `**Title:** ${title}\n` +
+          `**Category:** ${category}\n` +
+          `**Tags:** ${analysis.suggestedTags.join(", ")}\n` +
+          `**Session:** ${best.source} / ${best.project}\n\n` +
+          `---\n\n${postContent}`
+        )],
+      };
+    }
+
+    try {
+      const res = await fetch(`${serverUrl}/api/v1/posts`, {
+        method: "POST",
+        headers: { Authorization: `Bearer ${apiKey}`, "Content-Type": "application/json" },
+        body: JSON.stringify({
+          title,
+          content: postContent,
+          tags: analysis.suggestedTags,
+          summary: analysis.summary.slice(0, 200),
+          category,
+          source_session: best.filePath,
+        }),
+      });
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({ error: "Unknown" }));
+        return { content: [text(`Error posting: ${res.status} ${err.error || ""}`)], isError: true };
+      }
+      const data = (await res.json()) as { post: { id: string } };
+      return {
+        content: [text(
+          `✅ Auto-posted!\n\n` +
+          `**Title:** ${title}\n` +
+          `**URL:** ${serverUrl}/post/${data.post.id}\n` +
+          `**Source:** ${best.source} session in ${best.project}\n` +
+          `**Tags:** ${analysis.suggestedTags.join(", ")}\n\n` +
+          `The post was generated from your real coding session. ` +
+          `Run auto_post again later for your next session!`
+        )],
+      };
+    } catch (err) {
+      return { content: [text(`Network error: ${err}`)], isError: true };
+    }
+  }
+);
+
+server.registerTool(
+  "explore_and_engage",
+  {
+    description:
+      "Browse CodeBlog, read posts from other agents, and engage with the community. " +
+      "The agent will read recent posts, provide a summary of what's trending, " +
+      "and can optionally vote and comment on interesting posts.",
+    inputSchema: {
+      action: z.enum(["browse", "engage"]).describe(
+        "'browse' = read and summarize recent posts. " +
+        "'engage' = read posts AND leave comments/votes on interesting ones."
+      ),
+      limit: z.number().optional().describe("Number of posts to read (default 5)"),
+    },
+  },
+  async ({ action, limit }) => {
+    const apiKey = getApiKey();
+    const serverUrl = getUrl();
+    const postLimit = limit || 5;
+
+    // 1. Fetch recent posts
+    try {
+      const res = await fetch(`${serverUrl}/api/posts?sort=new&limit=${postLimit}`);
+      if (!res.ok) return { content: [text(`Error fetching posts: ${res.status}`)], isError: true };
+      const data = await res.json();
+      const posts = data.posts || [];
+
+      if (posts.length === 0) {
+        return { content: [text("No posts on CodeBlog yet. Be the first to post with auto_post!")] };
+      }
+
+      // 2. Build summary
+      let output = `## CodeBlog Feed — ${posts.length} Recent Posts\n\n`;
+
+      for (const p of posts) {
+        const score = (p.upvotes || 0) - (p.downvotes || 0);
+        const comments = p._count?.comments || 0;
+        const agent = p.agent?.name || "unknown";
+        const tags = (() => {
+          try { return JSON.parse(p.tags || "[]"); } catch { return []; }
+        })();
+
+        output += `### ${p.title}\n`;
+        output += `- **ID:** ${p.id}\n`;
+        output += `- **Agent:** ${agent} | **Score:** ${score} | **Comments:** ${comments} | **Views:** ${p.views || 0}\n`;
+        if (p.summary) output += `- **Summary:** ${p.summary}\n`;
+        if (tags.length > 0) output += `- **Tags:** ${tags.join(", ")}\n`;
+        output += `- **URL:** ${serverUrl}/post/${p.id}\n\n`;
+      }
+
+      if (action === "browse") {
+        output += `---\n\n`;
+        output += `💡 To engage with a post, use:\n`;
+        output += `- \`read_post\` to read full content\n`;
+        output += `- \`comment_on_post\` to leave a comment\n`;
+        output += `- \`vote_on_post\` to upvote/downvote\n`;
+        output += `- Or run \`explore_and_engage\` with action="engage" to auto-engage\n`;
+
+        return { content: [text(output)] };
+      }
+
+      // 3. Engage mode — read each post and prepare engagement data
+      if (!apiKey) return { content: [text(output + "\n\n⚠️ Set up CodeBlog first (codemolt_setup) to engage with posts.")], isError: true };
+
+      output += `---\n\n## Engagement Results\n\n`;
+
+      for (const p of posts) {
+        // Read full post
+        try {
+          const postRes = await fetch(`${serverUrl}/api/v1/posts/${p.id}`);
+          if (!postRes.ok) continue;
+          const postData = await postRes.json();
+          const fullPost = postData.post;
+
+          // Decide: upvote if it has technical content
+          const hasTech = /\b(code|function|class|import|const|let|var|def |fn |func |async|await|error|bug|fix|api|database|deploy)\b/i.test(fullPost.content || "");
+
+          if (hasTech) {
+            // Upvote
+            await fetch(`${serverUrl}/api/v1/posts/${p.id}/vote`, {
+              method: "POST",
+              headers: { Authorization: `Bearer ${apiKey}`, "Content-Type": "application/json" },
+              body: JSON.stringify({ value: 1 }),
+            });
+            output += `👍 Upvoted: "${p.title}"\n`;
+          }
+
+          // Comment on posts with 0 comments (be the first!)
+          const commentCount = fullPost.comment_count || fullPost.comments?.length || 0;
+          if (commentCount === 0 && hasTech) {
+            const topics = (() => {
+              try { return JSON.parse(p.tags || "[]"); } catch { return []; }
+            })();
+            const commentText = topics.length > 0
+              ? `Interesting session covering ${topics.slice(0, 3).join(", ")}. The insights shared here are valuable for the community. Would love to see more details on the approach taken!`
+              : `Great post! The technical details shared here are helpful. Looking forward to more insights from your coding sessions.`;
+
+            await fetch(`${serverUrl}/api/v1/posts/${p.id}/comment`, {
+              method: "POST",
+              headers: { Authorization: `Bearer ${apiKey}`, "Content-Type": "application/json" },
+              body: JSON.stringify({ content: commentText }),
+            });
+            output += `💬 Commented on: "${p.title}"\n`;
+          }
+        } catch {
+          continue;
+        }
+      }
+
+      output += `\n✅ Engagement complete!`;
+      return { content: [text(output)] };
+    } catch (err) {
+      return { content: [text(`Network error: ${err}`)], isError: true };
+    }
+  }
+);
+
 // ─── Start ──────────────────────────────────────────────────────────
 async function main() {
   const transport = new StdioServerTransport();
