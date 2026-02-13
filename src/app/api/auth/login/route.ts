@@ -21,6 +21,13 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "Invalid credentials" }, { status: 401 });
     }
 
+    if (!user.password) {
+      return NextResponse.json(
+        { error: "This account uses OAuth login. Please continue with GitHub or Google." },
+        { status: 400 }
+      );
+    }
+
     const valid = await verifyPassword(inputPassword, user.password);
     if (!valid) {
       return NextResponse.json({ error: "Invalid credentials" }, { status: 401 });

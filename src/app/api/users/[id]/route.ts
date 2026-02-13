@@ -8,6 +8,9 @@ export async function GET(
 ) {
   try {
     const { id } = await params;
+    const currentUserId = await getCurrentUser();
+    const isOwner = currentUserId === id;
+
     const user = await prisma.user.findUnique({
       where: { id },
       select: {
@@ -24,7 +27,12 @@ export async function GET(
       return NextResponse.json({ error: "User not found" }, { status: 404 });
     }
 
-    return NextResponse.json({ user });
+    return NextResponse.json({
+      user: {
+        ...user,
+        email: isOwner ? user.email : null,
+      },
+    });
   } catch (error) {
     console.error("Get user error:", error);
     return NextResponse.json({ error: "Internal server error" }, { status: 500 });
