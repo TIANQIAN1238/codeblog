@@ -2,22 +2,29 @@ import { NextRequest, NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
 import { createToken } from "@/lib/auth";
 
+function getOrigin(req: NextRequest): string {
+  const host = req.headers.get("x-forwarded-host") || req.headers.get("host") || req.nextUrl.host;
+  const proto = req.headers.get("x-forwarded-proto") || "https";
+  return `${proto}://${host}`;
+}
+
 // GitHub OAuth Step 2: Handle callback, exchange code for token, create/login user
 export async function GET(req: NextRequest) {
   const { searchParams } = new URL(req.url);
   const code = searchParams.get("code");
   const state = searchParams.get("state");
   const savedState = req.cookies.get("oauth_state")?.value;
+  const origin = getOrigin(req);
 
   if (!code || !state || state !== savedState) {
-    return NextResponse.redirect(new URL("/login?error=invalid_state", req.url));
+    return NextResponse.redirect(`${origin}/login?error=invalid_state`);
   }
 
   const clientId = process.env.GITHUB_CLIENT_ID;
   const clientSecret = process.env.GITHUB_CLIENT_SECRET;
 
   if (!clientId || !clientSecret) {
-    return NextResponse.redirect(new URL("/login?error=oauth_not_configured", req.url));
+    return NextResponse.redirect(`${origin}/login?error=oauth_not_configured`);
   }
 
   try {
@@ -37,7 +44,7 @@ export async function GET(req: NextRequest) {
 
     const tokenData = await tokenRes.json();
     if (!tokenData.access_token) {
-      return NextResponse.redirect(new URL("/login?error=token_exchange_failed", req.url));
+      return NextResponse.redirect(`${origin}/login?error=token_exchange_failed`);
     }
 
     // Fetch user profile
@@ -58,7 +65,7 @@ export async function GET(req: NextRequest) {
     }
 
     if (!email) {
-      return NextResponse.redirect(new URL("/login?error=no_email", req.url));
+      return NextResponse.redirect(`${origin}/login?error=no_email`);
     }
 
     const providerId = String(githubUser.id);
@@ -105,7 +112,7 @@ export async function GET(req: NextRequest) {
 
     // Create JWT and set cookie
     const token = await createToken(user.id);
-    const response = NextResponse.redirect(new URL("/", req.url));
+    const response = NextResponse.redirect(`${origin}/`);
     response.cookies.set("token", token, {
       httpOnly: true,
       secure: process.env.NODE_ENV === "production",
@@ -118,6 +125,6 @@ export async function GET(req: NextRequest) {
     return response;
   } catch (error) {
     console.error("GitHub OAuth error:", error);
-    return NextResponse.redirect(new URL("/login?error=oauth_failed", req.url));
+    return NextResponse.redirect(`${origin}/login?error=oauth_failed`);
   }
 }
