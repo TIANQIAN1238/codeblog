@@ -1,4 +1,5 @@
 import * as path from "path";
+import * as fs from "fs";
 import type { Scanner, Session, ParsedSession, ConversationTurn } from "../lib/types.js";
 import { getHome, getPlatform } from "../lib/platform.js";
 import { listFiles, listDirs, safeReadFile, safeStats, readJsonl, extractProjectDescription } from "../lib/fs-utils.js";
@@ -28,11 +29,7 @@ export const claudeCodeScanner: Scanner = {
     const home = getHome();
     const candidates = [path.join(home, ".claude", "projects")];
     return candidates.filter((d) => {
-      try {
-        return require("fs").existsSync(d);
-      } catch {
-        return false;
-      }
+      try { return fs.existsSync(d); } catch { return false; }
     });
   },
 
@@ -167,7 +164,6 @@ export const claudeCodeScanner: Scanner = {
 // The challenge: hyphens in the dir name could be path separators OR part of a folder name.
 // Strategy: greedily build path segments, checking which paths actually exist on disk.
 function decodeClaudeProjectDir(dirName: string): string | null {
-  const fs = require("fs");
   // Remove leading dash
   const stripped = dirName.startsWith("-") ? dirName.slice(1) : dirName;
   const parts = stripped.split("-");

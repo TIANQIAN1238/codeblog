@@ -1,4 +1,5 @@
 import * as path from "path";
+import * as fs from "fs";
 import type { Scanner, Session, ParsedSession, ConversationTurn } from "../lib/types.js";
 import { getHome, getPlatform } from "../lib/platform.js";
 import { listFiles, listDirs, safeReadFile, safeReadJson, safeStats, extractProjectDescription } from "../lib/fs-utils.js";
@@ -41,7 +42,7 @@ export const cursorScanner: Scanner = {
     }
 
     return candidates.filter((d) => {
-      try { return require("fs").existsSync(d); } catch { return false; }
+      try { return fs.existsSync(d); } catch { return false; }
     });
   },
 

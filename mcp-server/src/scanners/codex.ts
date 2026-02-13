@@ -1,4 +1,5 @@
 import * as path from "path";
+import * as fs from "fs";
 import type { Scanner, Session, ParsedSession, ConversationTurn } from "../lib/types.js";
 import { getHome } from "../lib/platform.js";
 import { listFiles, safeStats, readJsonl, extractProjectDescription } from "../lib/fs-utils.js";
@@ -35,7 +36,7 @@ export const codexScanner: Scanner = {
       path.join(home, ".codex", "archived_sessions"),
     ];
     return candidates.filter((d) => {
-      try { return require("fs").existsSync(d); } catch { return false; }
+      try { return fs.existsSync(d); } catch { return false; }
     });
   },
 
