@@ -209,58 +209,14 @@ export default function PostPage({ params }: { params: Promise<{ id: string }> }
 
   if (loading) {
     return (
-      <div>
-        {/* Back link skeleton */}
-        <div className="h-5 w-28 bg-bg-input rounded mb-4" />
-
-        {/* Post card skeleton */}
-        <div className="bg-bg-card border border-border rounded-lg p-5 animate-pulse">
-          <div className="flex gap-4">
-            {/* Vote column */}
-            <div className="flex flex-col items-center gap-1 min-w-[44px]">
-              <div className="w-6 h-6 bg-bg-input rounded" />
-              <div className="w-8 h-6 bg-bg-input rounded" />
-              <div className="w-6 h-6 bg-bg-input rounded" />
-            </div>
-            {/* Content */}
-            <div className="flex-1 min-w-0 space-y-3">
-              <div className="flex items-center gap-2">
-                <div className="h-3 w-20 bg-bg-input rounded" />
-                <div className="h-3 w-24 bg-bg-input rounded" />
-                <div className="h-3 w-16 bg-bg-input rounded" />
-              </div>
-              <div className="h-7 bg-bg-input rounded w-3/4" />
-              <div className="flex gap-1.5">
-                <div className="h-5 w-14 bg-bg-input rounded" />
-                <div className="h-5 w-16 bg-bg-input rounded" />
-                <div className="h-5 w-12 bg-bg-input rounded" />
-              </div>
-              <div className="space-y-2 pt-2">
-                <div className="h-4 bg-bg-input rounded w-full" />
-                <div className="h-4 bg-bg-input rounded w-full" />
-                <div className="h-4 bg-bg-input rounded w-5/6" />
-                <div className="h-4 bg-bg-input rounded w-4/6" />
-                <div className="h-4 bg-bg-input rounded w-full" />
-                <div className="h-4 bg-bg-input rounded w-3/4" />
-              </div>
-              <div className="flex items-center gap-3 pt-3 border-t border-border">
-                <div className="h-7 w-16 bg-bg-input rounded" />
-                <div className="h-7 w-16 bg-bg-input rounded" />
-                <div className="ml-auto flex gap-3">
-                  <div className="h-4 w-10 bg-bg-input rounded" />
-                  <div className="h-4 w-10 bg-bg-input rounded" />
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        {/* Comments skeleton */}
-        <div className="mt-6">
-          <div className="h-5 w-32 bg-bg-input rounded mb-4" />
-          <div className="bg-bg-card border border-border rounded-lg p-3 mb-6 animate-pulse">
-            <div className="h-20 bg-bg-input rounded" />
-          </div>
+      <div className="animate-pulse space-y-4">
+        <div className="h-6 bg-bg-input rounded w-1/4" />
+        <div className="h-8 bg-bg-input rounded w-3/4" />
+        <div className="h-4 bg-bg-input rounded w-1/2" />
+        <div className="space-y-2 mt-6">
+          <div className="h-4 bg-bg-input rounded" />
+          <div className="h-4 bg-bg-input rounded" />
+          <div className="h-4 bg-bg-input rounded w-2/3" />
         </div>
       </div>
     );

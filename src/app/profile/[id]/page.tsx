@@ -218,25 +218,50 @@ export default function ProfilePage({ params }: { params: Promise<{ id: string }
       </Link>
 
       {/* Profile header */}
-      <div className="bg-bg-card border border-border rounded-lg p-5 mb-4">
-        <div className="flex items-start gap-4">
-          <div className="w-16 h-16 rounded-full bg-primary/20 flex items-center justify-center flex-shrink-0">
-            <User className="w-8 h-8 text-primary" />
-          </div>
-          <div className="flex-1">
-            <h1 className="text-xl font-bold">{profileUser.username}</h1>
-            {profileUser.bio && (
-              <p className="text-sm text-text-muted mt-0.5">{profileUser.bio}</p>
+      <div className="bg-bg-card border border-border rounded-xl p-6 mb-4">
+        <div className="flex items-start gap-5">
+          {/* Avatar */}
+          <div className="flex-shrink-0">
+            {profileUser.avatar ? (
+              <img
+                src={profileUser.avatar}
+                alt={profileUser.username}
+                className="w-20 h-20 rounded-full object-cover border-2 border-primary/30"
+              />
+            ) : (
+              <div className="w-20 h-20 rounded-full bg-gradient-to-br from-primary/30 to-primary/10 flex items-center justify-center border-2 border-primary/20">
+                <User className="w-10 h-10 text-primary" />
+              </div>
             )}
-            <p className="text-xs text-text-dim mt-1">
+          </div>
+
+          {/* Info */}
+          <div className="flex-1 min-w-0">
+            <div className="flex items-center gap-3 flex-wrap">
+              <h1 className="text-2xl font-bold">{profileUser.username}</h1>
+              {profileUser.email && (
+                <span className="text-xs text-text-dim bg-bg-input px-2 py-0.5 rounded-full">{profileUser.email}</span>
+              )}
+            </div>
+            {profileUser.bio ? (
+              <p className="text-sm text-text-muted mt-1.5">{profileUser.bio}</p>
+            ) : isOwner ? (
+              <p className="text-sm text-text-dim mt-1.5 italic">Click edit to add a bio...</p>
+            ) : null}
+            <p className="text-xs text-text-dim mt-2">
               Joined {formatDate(profileUser.createdAt)}
             </p>
           </div>
+
+          {/* Actions */}
           {isOwner && (
             <div className="flex gap-2 flex-shrink-0">
               <button
-                onClick={() => setShowCreateAgent(!showCreateAgent)}
-                className="flex items-center gap-1 text-xs bg-primary/10 text-primary hover:bg-primary/20 px-2.5 py-1.5 rounded-md transition-colors"
+                onClick={() => {
+                  setActiveTab("agents");
+                  setShowCreateAgent(!showCreateAgent);
+                }}
+                className="flex items-center gap-1.5 text-xs bg-primary hover:bg-primary-dark text-white px-3 py-2 rounded-lg transition-colors shadow-sm"
               >
                 <Plus className="w-3.5 h-3.5" />
                 New Agent
@@ -246,22 +271,22 @@ export default function ProfilePage({ params }: { params: Promise<{ id: string }
         </div>
 
         {/* Stats row */}
-        <div className="flex items-center gap-6 mt-4 pt-4 border-t border-border">
-          <div className="text-center">
-            <div className="text-lg font-bold">{agents.length}</div>
-            <div className="text-xs text-text-dim flex items-center gap-1"><Bot className="w-3 h-3" /> agents</div>
+        <div className="grid grid-cols-4 gap-4 mt-5 pt-5 border-t border-border">
+          <div className="text-center p-2 rounded-lg bg-bg-input/50">
+            <div className="text-xl font-bold text-primary">{agents.length}</div>
+            <div className="text-xs text-text-dim flex items-center justify-center gap-1 mt-0.5"><Bot className="w-3 h-3" /> agents</div>
           </div>
-          <div className="text-center">
-            <div className="text-lg font-bold">{posts.length}</div>
-            <div className="text-xs text-text-dim flex items-center gap-1"><FileText className="w-3 h-3" /> posts</div>
+          <div className="text-center p-2 rounded-lg bg-bg-input/50">
+            <div className="text-xl font-bold text-primary">{posts.length}</div>
+            <div className="text-xs text-text-dim flex items-center justify-center gap-1 mt-0.5"><FileText className="w-3 h-3" /> posts</div>
           </div>
-          <div className="text-center">
-            <div className="text-lg font-bold">{totalUpvotes}</div>
-            <div className="text-xs text-text-dim flex items-center gap-1"><ArrowBigUp className="w-3 h-3" /> upvotes</div>
+          <div className="text-center p-2 rounded-lg bg-bg-input/50">
+            <div className="text-xl font-bold text-primary">{totalUpvotes}</div>
+            <div className="text-xs text-text-dim flex items-center justify-center gap-1 mt-0.5"><ArrowBigUp className="w-3 h-3" /> upvotes</div>
           </div>
-          <div className="text-center">
-            <div className="text-lg font-bold">{totalPostViews.toLocaleString()}</div>
-            <div className="text-xs text-text-dim flex items-center gap-1"><Eye className="w-3 h-3" /> views</div>
+          <div className="text-center p-2 rounded-lg bg-bg-input/50">
+            <div className="text-xl font-bold text-primary">{totalPostViews.toLocaleString()}</div>
+            <div className="text-xs text-text-dim flex items-center justify-center gap-1 mt-0.5"><Eye className="w-3 h-3" /> views</div>
           </div>
         </div>
       </div>

@@ -8,6 +8,21 @@ function getOrigin(req: NextRequest): string {
   return `${proto}://${host}`;
 }
 
+// Generate a username from Google profile name/email
+function generateUsername(name: string, email: string, providerId: string): string {
+  // Try ASCII from name first
+  let username = name.toLowerCase().replace(/[^a-z0-9_]/g, "").slice(0, 20);
+  // If name is non-ASCII (e.g. Chinese), use email prefix
+  if (!username || username.length < 2) {
+    username = email.split("@")[0].toLowerCase().replace(/[^a-z0-9_]/g, "").slice(0, 20);
+  }
+  // Final fallback: use provider ID prefix
+  if (!username || username.length < 2) {
+    username = `u_${providerId.slice(-8)}`;
+  }
+  return username;
+}
+
 // Google OAuth Step 2: Handle callback, exchange code for token, create/login user
 export async function GET(req: NextRequest) {
   const { searchParams } = new URL(req.url);
@@ -77,19 +92,24 @@ export async function GET(req: NextRequest) {
 
     if (user) {
       // Link Google provider if user exists but logged in via email before
+      const updates: Record<string, string> = {};
       if (!user.provider) {
-        await prisma.user.update({
-          where: { id: user.id },
-          data: { provider: "google", providerId, avatar: avatar || user.avatar },
-        });
+        updates.provider = "google";
+        updates.providerId = providerId;
+      }
+      if (avatar && !user.avatar) updates.avatar = avatar;
+      // Fix users stuck with "user" username
+      if (user.username === "user" || user.username.startsWith("user")) {
+        const betterName = generateUsername(name, email, providerId);
+        if (betterName !== "user") updates.username = betterName;
+      }
+      if (Object.keys(updates).length > 0) {
+        await prisma.user.update({ where: { id: user.id }, data: updates });
+        Object.assign(user, updates);
       }
     } else {
-      // Create new user — generate unique username from name/email
-      let username = name.toLowerCase().replace(/[^a-z0-9]/g, "").slice(0, 20) || "user";
-      const existingUsername = await prisma.user.findUnique({ where: { username } });
-      if (existingUsername) {
-        username = `${username}${providerId.slice(-4)}`;
-      }
+      // Create new user
+      const username = generateUsername(name, email, providerId);
 
       user = await prisma.user.create({
         data: {
