@@ -57,9 +57,89 @@ interface CategoryData {
   _count: { posts: number };
 }
 
+function HomeSkeleton() {
+  return (
+    <div className="max-w-5xl mx-auto">
+      {/* Hero skeleton */}
+      <div className="mb-8 text-center py-10">
+        <div className="flex items-center justify-center gap-3 mb-4">
+          <div className="w-10 h-10 bg-bg-input rounded-lg" />
+          <div className="w-6 h-6 bg-bg-input rounded" />
+        </div>
+        <div className="h-8 bg-bg-input rounded w-80 mx-auto mb-3" />
+        <div className="h-4 bg-bg-input rounded w-96 mx-auto mb-2" />
+        <div className="h-4 bg-bg-input rounded w-72 mx-auto mb-6" />
+        <div className="flex items-center justify-center gap-3">
+          <div className="h-10 w-32 bg-bg-input rounded-lg" />
+          <div className="h-10 w-32 bg-bg-input rounded-lg" />
+        </div>
+      </div>
+
+      {/* Stats skeleton */}
+      <div className="flex items-center justify-center gap-8 mb-8 py-3">
+        {[1, 2, 3].map((i) => (
+          <div key={i} className="text-center">
+            <div className="h-8 w-12 bg-bg-input rounded mx-auto mb-1" />
+            <div className="h-3 w-16 bg-bg-input rounded mx-auto" />
+          </div>
+        ))}
+      </div>
+
+      {/* Feed + Sidebar skeleton */}
+      <div className="flex gap-6">
+        <div className="flex-1 min-w-0">
+          {/* Sort tabs skeleton */}
+          <div className="flex items-center gap-1 mb-4 border-b border-border pb-2">
+            {[1, 2, 3, 4].map((i) => (
+              <div key={i} className="h-8 w-20 bg-bg-input rounded-md" />
+            ))}
+          </div>
+          {/* Post skeletons */}
+          <div className="space-y-3">
+            {[1, 2, 3, 4].map((i) => (
+              <div key={i} className="bg-bg-card border border-border rounded-lg p-4 animate-pulse">
+                <div className="flex gap-3">
+                  <div className="w-10 space-y-2">
+                    <div className="h-4 bg-bg-input rounded" />
+                    <div className="h-4 bg-bg-input rounded" />
+                    <div className="h-4 bg-bg-input rounded" />
+                  </div>
+                  <div className="flex-1 space-y-2">
+                    <div className="h-3 bg-bg-input rounded w-1/4" />
+                    <div className="h-5 bg-bg-input rounded w-3/4" />
+                    <div className="h-3 bg-bg-input rounded w-1/2" />
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* Sidebar skeleton */}
+        <div className="hidden lg:block w-72 flex-shrink-0 space-y-4">
+          <div className="bg-bg-card border border-border rounded-lg p-4 animate-pulse">
+            <div className="h-4 bg-bg-input rounded w-1/2 mb-3" />
+            <div className="h-3 bg-bg-input rounded w-full mb-2" />
+            <div className="h-3 bg-bg-input rounded w-4/5 mb-3" />
+            <div className="h-8 bg-bg-input rounded w-full" />
+          </div>
+          <div className="bg-bg-card border border-border rounded-lg p-4 animate-pulse">
+            <div className="h-4 bg-bg-input rounded w-1/3 mb-3" />
+            <div className="space-y-2">
+              {[1, 2, 3].map((i) => (
+                <div key={i} className="h-3 bg-bg-input rounded w-full" />
+              ))}
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 export default function HomePage() {
   return (
-    <Suspense fallback={<div className="animate-pulse space-y-4"><div className="h-8 bg-bg-input rounded w-1/3" /><div className="h-32 bg-bg-input rounded" /></div>}>
+    <Suspense fallback={<HomeSkeleton />}>
       <HomeContent />
     </Suspense>
   );

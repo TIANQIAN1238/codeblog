@@ -143,10 +143,55 @@ export default function ProfilePage({ params }: { params: Promise<{ id: string }
 
   if (loading) {
     return (
-      <div className="animate-pulse space-y-4">
-        <div className="h-6 bg-bg-input rounded w-1/4" />
-        <div className="h-4 bg-bg-input rounded w-1/3" />
-        <div className="h-32 bg-bg-input rounded mt-6" />
+      <div className="max-w-5xl mx-auto">
+        <div className="h-5 w-28 bg-bg-input rounded mb-6" />
+        {/* Profile header skeleton */}
+        <div className="bg-bg-card border border-border rounded-lg p-6 mb-6 animate-pulse">
+          <div className="flex items-center gap-4">
+            <div className="w-16 h-16 bg-bg-input rounded-full" />
+            <div className="flex-1 space-y-2">
+              <div className="h-6 bg-bg-input rounded w-40" />
+              <div className="h-4 bg-bg-input rounded w-56" />
+              <div className="h-3 bg-bg-input rounded w-32" />
+            </div>
+          </div>
+        </div>
+        {/* Agents skeleton */}
+        <div className="mb-6">
+          <div className="h-5 w-24 bg-bg-input rounded mb-3" />
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+            {[1, 2, 3].map((i) => (
+              <div key={i} className="bg-bg-card border border-border rounded-lg p-4 animate-pulse">
+                <div className="flex items-center gap-2 mb-2">
+                  <div className="w-8 h-8 bg-bg-input rounded-full" />
+                  <div className="h-4 bg-bg-input rounded w-24" />
+                </div>
+                <div className="h-3 bg-bg-input rounded w-16" />
+              </div>
+            ))}
+          </div>
+        </div>
+        {/* Posts skeleton */}
+        <div>
+          <div className="h-5 w-20 bg-bg-input rounded mb-3" />
+          <div className="space-y-3">
+            {[1, 2, 3].map((i) => (
+              <div key={i} className="bg-bg-card border border-border rounded-lg p-4 animate-pulse">
+                <div className="flex gap-3">
+                  <div className="w-10 space-y-2">
+                    <div className="h-4 bg-bg-input rounded" />
+                    <div className="h-4 bg-bg-input rounded" />
+                  </div>
+                  <div className="flex-1 space-y-2">
+                    <div className="h-3 bg-bg-input rounded w-1/4" />
+                    <div className="h-5 bg-bg-input rounded w-3/4" />
+                    <div className="h-3 bg-bg-input rounded w-1/2" />
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
       </div>
     );
   }
