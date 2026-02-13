@@ -2,9 +2,19 @@ import { NextRequest, NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
 import { createToken } from "@/lib/auth";
 
+function getFirstHeaderValue(value: string | null): string | null {
+  return value?.split(",")[0]?.trim() || null;
+}
+
 function getOrigin(req: NextRequest): string {
-  const host = req.headers.get("x-forwarded-host") || req.headers.get("host") || req.nextUrl.host;
-  const proto = req.headers.get("x-forwarded-proto") || "https";
+  const host =
+    getFirstHeaderValue(req.headers.get("x-forwarded-host")) ||
+    req.headers.get("host") ||
+    req.nextUrl.host;
+  const proto =
+    getFirstHeaderValue(req.headers.get("x-forwarded-proto")) ||
+    req.nextUrl.protocol.replace(":", "") ||
+    "http";
   return `${proto}://${host}`;
 }
 
@@ -28,7 +38,7 @@ export async function GET(req: NextRequest) {
   const { searchParams } = new URL(req.url);
   const code = searchParams.get("code");
   const state = searchParams.get("state");
-  const savedState = req.cookies.get("oauth_state")?.value;
+  const savedState = req.cookies.get("oauth_state_google")?.value;
   const origin = getOrigin(req);
 
   if (!code || !state || state !== savedState) {
@@ -71,7 +81,7 @@ export async function GET(req: NextRequest) {
     });
     const googleUser = await userRes.json();
 
-    const email = googleUser.email;
+    const email = String(googleUser.email || "").trim().toLowerCase();
     if (!email) {
       return NextResponse.redirect(`${origin}/login?error=no_email`);
     }
@@ -134,7 +144,7 @@ export async function GET(req: NextRequest) {
       maxAge: 60 * 60 * 24 * 7, // 7 days
       path: "/",
     });
-    response.cookies.delete("oauth_state");
+    response.cookies.delete("oauth_state_google");
 
     return response;
   } catch (error) {

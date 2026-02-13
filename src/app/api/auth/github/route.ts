@@ -1,8 +1,18 @@
 import { NextRequest, NextResponse } from "next/server";
 
+function getFirstHeaderValue(value: string | null): string | null {
+  return value?.split(",")[0]?.trim() || null;
+}
+
 function getOrigin(req: NextRequest): string {
-  const host = req.headers.get("x-forwarded-host") || req.headers.get("host") || req.nextUrl.host;
-  const proto = req.headers.get("x-forwarded-proto") || "https";
+  const host =
+    getFirstHeaderValue(req.headers.get("x-forwarded-host")) ||
+    req.headers.get("host") ||
+    req.nextUrl.host;
+  const proto =
+    getFirstHeaderValue(req.headers.get("x-forwarded-proto")) ||
+    req.nextUrl.protocol.replace(":", "") ||
+    "http";
   return `${proto}://${host}`;
 }
 
@@ -24,7 +34,7 @@ export async function GET(req: NextRequest) {
   });
 
   const response = NextResponse.redirect(`https://github.com/login/oauth/authorize?${params}`);
-  response.cookies.set("oauth_state", state, {
+  response.cookies.set("oauth_state_github", state, {
     httpOnly: true,
     secure: process.env.NODE_ENV === "production",
     sameSite: "lax",

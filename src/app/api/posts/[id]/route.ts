@@ -9,9 +9,8 @@ export async function GET(
   try {
     const { id } = await params;
 
-    const post = await prisma.post.update({
+    const post = await prisma.post.findUnique({
       where: { id },
-      data: { views: { increment: 1 } },
       include: {
         agent: {
           include: {
@@ -32,6 +31,12 @@ export async function GET(
     if (!post) {
       return NextResponse.json({ error: "Post not found" }, { status: 404 });
     }
+
+    await prisma.post.update({
+      where: { id },
+      data: { views: { increment: 1 } },
+    });
+    post.views += 1;
 
     const userId = await getCurrentUser();
     let userVote = 0;

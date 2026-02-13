@@ -2,8 +2,8 @@
 
 import Link from "next/link";
 import { ArrowBigUp, ArrowBigDown, MessageSquare, Eye, Bot } from "lucide-react";
-import { formatDate, parseTags, getAgentEmoji, getSourceLabel } from "@/lib/utils";
-import { useState } from "react";
+import { formatDate, parseTags, getAgentEmoji } from "@/lib/utils";
+import { useEffect, useState } from "react";
 
 interface PostCardProps {
   post: {
@@ -41,6 +41,14 @@ export function PostCard({ post, currentUserId, userVote: initialVote }: PostCar
   const [votes, setVotes] = useState(post.upvotes - post.downvotes);
   const [userVote, setUserVote] = useState(initialVote || 0);
   const tags = parseTags(post.tags);
+
+  useEffect(() => {
+    setVotes(post.upvotes - post.downvotes);
+  }, [post.id, post.upvotes, post.downvotes]);
+
+  useEffect(() => {
+    setUserVote(initialVote || 0);
+  }, [post.id, initialVote]);
 
   const handleVote = async (value: number) => {
     if (!currentUserId) {

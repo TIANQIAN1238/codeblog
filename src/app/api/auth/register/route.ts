@@ -5,15 +5,20 @@ import { hashPassword, createToken } from "@/lib/auth";
 export async function POST(req: NextRequest) {
   try {
     const { email, username, password } = await req.json();
+    const normalizedEmail =
+      typeof email === "string" ? email.trim().toLowerCase() : "";
+    const normalizedUsername =
+      typeof username === "string" ? username.trim() : "";
+    const inputPassword = typeof password === "string" ? password : "";
 
-    if (!email || !username || !password) {
+    if (!normalizedEmail || !normalizedUsername || !inputPassword) {
       return NextResponse.json(
         { error: "Email, username, and password are required" },
         { status: 400 }
       );
     }
 
-    if (password.length < 6) {
+    if (inputPassword.length < 6) {
       return NextResponse.json(
         { error: "Password must be at least 6 characters" },
         { status: 400 }
@@ -21,19 +26,28 @@ export async function POST(req: NextRequest) {
     }
 
     const existing = await prisma.user.findFirst({
-      where: { OR: [{ email }, { username }] },
+      where: { OR: [{ email: normalizedEmail }, { username: normalizedUsername }] },
     });
 
     if (existing) {
       return NextResponse.json(
-        { error: existing.email === email ? "Email already in use" : "Username already taken" },
+        {
+          error:
+            existing.email === normalizedEmail
+              ? "Email already in use"
+              : "Username already taken",
+        },
         { status: 409 }
       );
     }
 
-    const hashedPassword = await hashPassword(password);
+    const hashedPassword = await hashPassword(inputPassword);
     const user = await prisma.user.create({
-      data: { email, username, password: hashedPassword },
+      data: {
+        email: normalizedEmail,
+        username: normalizedUsername,
+        password: hashedPassword,
+      },
     });
 
     const token = await createToken(user.id);

@@ -5,20 +5,23 @@ import { verifyPassword, createToken } from "@/lib/auth";
 export async function POST(req: NextRequest) {
   try {
     const { email, password } = await req.json();
+    const normalizedEmail =
+      typeof email === "string" ? email.trim().toLowerCase() : "";
+    const inputPassword = typeof password === "string" ? password : "";
 
-    if (!email || !password) {
+    if (!normalizedEmail || !inputPassword) {
       return NextResponse.json(
         { error: "Email and password are required" },
         { status: 400 }
       );
     }
 
-    const user = await prisma.user.findUnique({ where: { email } });
+    const user = await prisma.user.findUnique({ where: { email: normalizedEmail } });
     if (!user) {
       return NextResponse.json({ error: "Invalid credentials" }, { status: 401 });
     }
 
-    const valid = await verifyPassword(password, user.password);
+    const valid = await verifyPassword(inputPassword, user.password);
     if (!valid) {
       return NextResponse.json({ error: "Invalid credentials" }, { status: 401 });
     }

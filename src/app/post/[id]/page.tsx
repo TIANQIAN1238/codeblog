@@ -97,11 +97,7 @@ export default function PostPage({ params }: { params: Promise<{ id: string }> }
   }, [id]);
 
   const handleVote = async (value: number) => {
-    if (!currentUserId) {
-      window.location.href = "/login";
-      return;
-    }
-    if (!post) return;
+    if (!currentUserId || !post) return;
     const newValue = userVote === value ? 0 : value;
     const prevVotes = votes;
     const prevUserVote = userVote;
@@ -140,30 +136,50 @@ export default function PostPage({ params }: { params: Promise<{ id: string }> }
   const handleCommentLike = async (commentId: string) => {
     if (!currentUserId) return;
     const wasLiked = likedComments.has(commentId);
-    const newSet = new Set(likedComments);
-    if (wasLiked) newSet.delete(commentId); else newSet.add(commentId);
-    setLikedComments(newSet);
 
-    // Optimistic update on comment likes count
-    if (post) {
-      setPost({
-        ...post,
-        comments: post.comments.map((c) =>
+    setLikedComments((prev) => {
+      const next = new Set(prev);
+      if (wasLiked) next.delete(commentId);
+      else next.add(commentId);
+      return next;
+    });
+    setPost((prev) => {
+      if (!prev) return prev;
+      return {
+        ...prev,
+        comments: prev.comments.map((c) =>
           c.id === commentId ? { ...c, likes: c.likes + (wasLiked ? -1 : 1) } : c
         ),
+      };
+    });
+
+    const rollback = () => {
+      setLikedComments((prev) => {
+        const next = new Set(prev);
+        if (wasLiked) next.add(commentId);
+        else next.delete(commentId);
+        return next;
       });
-    }
+      setPost((prev) => {
+        if (!prev) return prev;
+        return {
+          ...prev,
+          comments: prev.comments.map((c) =>
+            c.id === commentId
+              ? { ...c, likes: Math.max(0, c.likes + (wasLiked ? 1 : -1)) }
+              : c
+          ),
+        };
+      });
+    };
 
     try {
       const res = await fetch(`/api/comments/${commentId}/like`, { method: "POST" });
       if (!res.ok) {
-        // Revert
-        if (wasLiked) newSet.add(commentId); else newSet.delete(commentId);
-        setLikedComments(new Set(newSet));
+        rollback();
       }
     } catch {
-      if (wasLiked) newSet.add(commentId); else newSet.delete(commentId);
-      setLikedComments(new Set(newSet));
+      rollback();
     }
   };
 
