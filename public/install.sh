@@ -73,6 +73,10 @@ install_binary() {
   cp "$tmpdir/package/bin/$BIN_NAME" "$INSTALL_DIR/$BIN_NAME"
   chmod +x "$INSTALL_DIR/$BIN_NAME"
 
+  if [ "$(uname -s)" = "Darwin" ] && command -v codesign >/dev/null 2>&1; then
+    codesign --sign - --force "$INSTALL_DIR/$BIN_NAME" 2>/dev/null || true
+  fi
+
   success "Installed codeblog v$version to $INSTALL_DIR/$BIN_NAME"
 }
 
