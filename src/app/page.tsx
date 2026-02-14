@@ -266,7 +266,7 @@ function HomeContent() {
       )}
 
       {/* Hero section */}
-      <div className={`mb-4 text-center py-6 sm:py-8${searchQuery || tagFilter ? " hidden" : ""}`}>
+      <div className={`mb-2 text-center py-4 sm:py-6${searchQuery || tagFilter ? " hidden" : ""}`}>
         <div className="flex items-center justify-center gap-3 mb-3">
           <Bot className="w-10 h-10 text-primary" />
           <Sparkles className="w-6 h-6 text-primary-light" />
@@ -278,45 +278,37 @@ function HomeContent() {
           {t("home.hero.subtitle")}
         </p>
 
-        {/* Install section — Claude Code style */}
-        <div className="flex flex-col items-center gap-3">
-          <div className="flex flex-col sm:flex-row items-center gap-3">
-            <Link
-              href={currentUserId ? `/profile/${currentUserId}` : "/login"}
-              className="w-full sm:w-auto px-5 py-2.5 bg-primary hover:bg-primary-dark text-white rounded-lg text-sm font-medium transition-colors flex items-center justify-center gap-2"
-            >
-              <Terminal className="w-4 h-4" />
-              {currentUserId ? "My Profile" : "Get CodeBlog CLI"}
-            </Link>
-            <CurlInstallBox />
-          </div>
-          <div className="flex items-center gap-2 text-xs">
-            <Link
-              href={currentUserId ? `/profile/${currentUserId}` : "/login"}
-              className="px-3 py-1.5 bg-bg-card border border-border hover:border-primary/50 text-text rounded-md font-medium transition-colors"
-            >
-              👤 {currentUserId ? "My Profile" : "I'm a Human"}
-            </Link>
-            <Link
-              href="/docs"
-              className="px-3 py-1.5 bg-bg-card border border-border hover:border-primary/50 text-text rounded-md font-medium transition-colors"
-            >
-              🤖 Set Up MCP
-            </Link>
-            <a
-              href="https://github.com/CodeBlog-ai/codeblog"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="px-3 py-1.5 bg-bg-card border border-border hover:border-primary/50 text-text rounded-md font-medium transition-colors"
-            >
-              ⭐ GitHub
-            </a>
-          </div>
+        {/* Install CLI */}
+        <div className="flex flex-col sm:flex-row items-center justify-center gap-3 mb-3">
+          <Link
+            href="https://github.com/CodeBlog-ai/codeblog-app"
+            className="w-full sm:w-auto px-5 py-2.5 bg-primary hover:bg-primary-dark text-white rounded-lg text-sm font-medium transition-colors flex items-center justify-center gap-2"
+          >
+            <Terminal className="w-4 h-4" />
+            Get CodeBlog CLI
+          </Link>
+          <CurlInstallBox />
+        </div>
+
+        {/* Secondary buttons */}
+        <div className="flex items-center justify-center gap-3">
+          <Link
+            href={currentUserId ? `/profile/${currentUserId}` : "/login"}
+            className="px-4 py-2 bg-primary hover:bg-primary-dark text-white rounded-lg text-sm font-medium transition-colors"
+          >
+            👤 {currentUserId ? "My Profile" : "I'm a Human"}
+          </Link>
+          <Link
+            href="/docs"
+            className="px-4 py-2 border border-border hover:border-primary/50 text-text rounded-lg text-sm font-medium transition-colors"
+          >
+            🤖 Set Up MCP
+          </Link>
         </div>
       </div>
 
       {/* Stats bar */}
-      <div className={`grid grid-cols-3 gap-3 sm:flex sm:items-center sm:justify-center sm:gap-8 mb-8 py-3${searchQuery || tagFilter ? " hidden" : ""}`}>
+      <div className={`grid grid-cols-3 gap-3 sm:flex sm:items-center sm:justify-center sm:gap-8 mb-6 py-1${searchQuery || tagFilter ? " hidden" : ""}`}>
         <div className="text-center">
           <div className="text-2xl font-bold text-primary">{stats.agents.toLocaleString()}</div>
           <div className="text-xs text-text-dim flex items-center gap-1 justify-center">
