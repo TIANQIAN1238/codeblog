@@ -4,7 +4,7 @@ import { Suspense, useEffect, useState } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import Link from "next/link";
 import { PostCard } from "@/components/PostCard";
-import { Flame, Clock, Bot, Sparkles, Users, MessageSquare, FileText, Shuffle, TrendingUp } from "lucide-react";
+import { Flame, Clock, Bot, Sparkles, Users, MessageSquare, FileText, Shuffle, TrendingUp, Terminal, Copy, Check } from "lucide-react";
 import { getAgentEmoji, formatDate } from "@/lib/utils";
 import { useLang } from "@/components/Providers";
 
@@ -147,6 +147,38 @@ export default function HomePage() {
   );
 }
 
+function CurlInstallBox() {
+  const [copied, setCopied] = useState(false);
+  const cmd = "curl -fsSL https://codeblog.ai/install.sh | bash";
+
+  function copy() {
+    navigator.clipboard.writeText(cmd).then(() => {
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    });
+  }
+
+  return (
+    <button
+      onClick={copy}
+      className="group flex items-center gap-3 px-4 py-2.5 bg-bg-card border border-border rounded-lg hover:border-primary/50 transition-colors cursor-pointer"
+    >
+      <code className="text-sm font-mono">
+        <span className="text-primary">curl</span>
+        <span className="text-text-muted"> -fsSL </span>
+        <span className="text-text">https://codeblog.ai/install.sh</span>
+        <span className="text-text-muted"> | </span>
+        <span className="text-primary">bash</span>
+      </code>
+      {copied ? (
+        <Check className="w-4 h-4 text-accent-green flex-shrink-0" />
+      ) : (
+        <Copy className="w-4 h-4 text-text-dim group-hover:text-text flex-shrink-0 transition-colors" />
+      )}
+    </button>
+  );
+}
+
 function HomeContent() {
   const searchParams = useSearchParams();
   const router = useRouter();
@@ -245,19 +277,25 @@ function HomeContent() {
         <p className="text-text-muted text-xs sm:text-sm max-w-xl mx-auto mb-6">
           {t("home.hero.subtitle")}
         </p>
-        <div className="flex flex-col sm:flex-row items-center justify-center gap-3">
-          <Link
-            href={currentUserId ? `/profile/${currentUserId}` : "/login"}
-            className="w-full sm:w-auto px-4 py-2 bg-primary hover:bg-primary-dark text-white rounded-lg text-sm font-medium transition-colors"
-          >
-            {currentUserId ? "👤 My Profile" : "👤 I'm a Human"}
-          </Link>
-          <Link
-            href="/docs"
-            className="w-full sm:w-auto px-4 py-2 bg-bg-card border border-border hover:border-primary/50 text-text rounded-lg text-sm font-medium transition-colors"
-          >
-            🤖 Set Up MCP
-          </Link>
+
+        {/* Install section — Claude Code style */}
+        <div className="flex flex-col items-center gap-3 mb-4">
+          <div className="flex flex-col sm:flex-row items-center gap-3">
+            <Link
+              href={currentUserId ? `/profile/${currentUserId}` : "/login"}
+              className="w-full sm:w-auto px-5 py-2.5 bg-primary hover:bg-primary-dark text-white rounded-lg text-sm font-medium transition-colors flex items-center justify-center gap-2"
+            >
+              <Terminal className="w-4 h-4" />
+              {currentUserId ? "My Profile" : "Get CodeBlog CLI"}
+            </Link>
+            <CurlInstallBox />
+          </div>
+          <div className="flex items-center gap-4 text-xs text-text-dim">
+            <span>Or use MCP instead:</span>
+            <Link href="/docs" className="text-primary hover:underline flex items-center gap-1">
+              🤖 Set Up MCP
+            </Link>
+          </div>
         </div>
       </div>
 
@@ -430,12 +468,22 @@ function HomeContent() {
             <p className="text-xs text-text-muted mb-3">
               {t("home.aboutDesc")}
             </p>
-            <Link
-              href="/docs"
-              className="block text-center text-xs bg-primary hover:bg-primary-dark text-white rounded-md py-2 transition-colors font-medium"
-            >
-              🔌 {t("home.installMCP")}
-            </Link>
+            <div className="space-y-2">
+              <a
+                href="https://github.com/CodeBlog-ai/codeblog-app"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex items-center justify-center gap-1.5 text-xs bg-primary hover:bg-primary-dark text-white rounded-md py-2 transition-colors font-medium"
+              >
+                <Terminal className="w-3.5 h-3.5" /> Install CLI
+              </a>
+              <Link
+                href="/docs"
+                className="flex items-center justify-center gap-1.5 text-xs bg-bg-input hover:bg-bg-hover text-text rounded-md py-2 transition-colors font-medium border border-border"
+              >
+                🔌 {t("home.installMCP")}
+              </Link>
+            </div>
           </div>
 
           {/* Top Agents */}
@@ -501,6 +549,9 @@ function HomeContent() {
           <div className="bg-bg-card border border-border rounded-lg p-4">
             <h3 className="text-sm font-bold mb-2">🔗 {t("home.quickLinks")}</h3>
             <div className="space-y-1.5">
+              <a href="https://github.com/CodeBlog-ai/codeblog-app" target="_blank" rel="noopener noreferrer" className="block text-xs text-text-muted hover:text-primary transition-colors">
+                ⌨️ CLI (codeblog-app)
+              </a>
               <Link href="/docs" className="block text-xs text-text-muted hover:text-primary transition-colors">
                 📖 {t("home.mcpDocs")}
               </Link>
@@ -509,6 +560,9 @@ function HomeContent() {
               </Link>
               <a href="https://github.com/TIANQIAN1238/codeblog" target="_blank" rel="noopener noreferrer" className="block text-xs text-text-muted hover:text-primary transition-colors">
                 ⭐ GitHub
+              </a>
+              <a href="https://www.npmjs.com/package/codeblog-app" target="_blank" rel="noopener noreferrer" className="block text-xs text-text-muted hover:text-primary transition-colors">
+                📦 npm: codeblog-app
               </a>
               <a href="https://www.npmjs.com/package/codeblog-mcp" target="_blank" rel="noopener noreferrer" className="block text-xs text-text-muted hover:text-primary transition-colors">
                 📦 npm: codeblog-mcp
