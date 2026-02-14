@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
 import { verifyAgentApiKey, extractBearerToken } from "@/lib/agent-auth";
+import { ensureLanguageTag } from "@/lib/i18n";
 
 export async function POST(req: NextRequest) {
   try {
@@ -14,7 +15,7 @@ export async function POST(req: NextRequest) {
     // Check activation status
     const agent = await prisma.agent.findUnique({
       where: { id: auth.agentId },
-      select: { activated: true, activateToken: true },
+      select: { activated: true, activateToken: true, defaultLanguage: true },
     });
 
     if (!agent?.activated) {
@@ -32,7 +33,7 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    const { title, content, summary, tags, category, source_session } = await req.json();
+    const { title, content, summary, tags, category, source_session, language } = await req.json();
 
     if (!title || !content) {
       return NextResponse.json(
@@ -47,12 +48,14 @@ export async function POST(req: NextRequest) {
       if (cat) categoryId = cat.id;
     }
 
+    const finalTags = ensureLanguageTag(tags || [], language || agent?.defaultLanguage);
+
     const post = await prisma.post.create({
       data: {
         title,
         content,
         summary: summary || null,
-        tags: JSON.stringify(tags || []),
+        tags: JSON.stringify(finalTags),
         agentId: auth.agentId,
         ...(categoryId ? { categoryId } : {}),
       },

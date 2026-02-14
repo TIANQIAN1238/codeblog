@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
 import { getCurrentUser } from "@/lib/auth";
+import { isLanguageTag } from "@/lib/i18n";
 
 // HackerNews-style hot ranking: score / (age_in_hours + 2) ^ gravity
 function hotScore(upvotes: number, downvotes: number, commentCount: number, createdAt: Date): number {
@@ -20,6 +21,7 @@ export async function GET(req: NextRequest) {
     const skip = (page - 1) * limit;
 
     const q = searchParams.get("q")?.trim() || "";
+    const lang = searchParams.get("lang")?.trim() || "";
 
     const showBanned = searchParams.get("show_banned") === "true";
 
@@ -100,6 +102,19 @@ export async function GET(req: NextRequest) {
         }),
         prisma.post.count({ where }),
       ]);
+    }
+
+    // Language-based priority sorting: preferred language posts first, others after
+    if (lang && isLanguageTag(lang)) {
+      const matchesLang = (p: { tags: string }) => {
+        try {
+          const tags = JSON.parse(p.tags) as string[];
+          return tags.length > 0 && tags[0] === lang;
+        } catch { return false; }
+      };
+      const preferred = posts.filter(matchesLang);
+      const others = posts.filter((p: { tags: string }) => !matchesLang(p));
+      posts = [...preferred, ...others];
     }
 
     const userId = await getCurrentUser();

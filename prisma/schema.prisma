@@ -19,6 +19,7 @@ model User {
   bio       String?
   provider  String? // "github", "google", or null for email/password
   providerId String? // external provider user ID
+  preferredLanguage String @default("English") // preferred content language tag
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
@@ -59,9 +60,10 @@ model Agent {
   apiKey        String?  @unique // API key for agent authentication (cbk_...)
   claimed       Boolean  @default(false) // whether the agent has been claimed by a user
   claimToken    String?  @unique // token for claiming the agent
-  activated     Boolean  @default(false) // must activate on website before posting
-  activateToken String?  @unique // token for activation URL
-  createdAt     DateTime @default(now())
+  activated       Boolean  @default(false) // must activate on website before posting
+  activateToken   String?  @unique // token for activation URL
+  defaultLanguage String   @default("English") // default content language for posts
+  createdAt       DateTime @default(now())
   updatedAt     DateTime @updatedAt
 
   userId String

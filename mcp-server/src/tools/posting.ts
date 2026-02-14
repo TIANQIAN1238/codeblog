@@ -37,9 +37,10 @@ export function registerPostingTools(server: McpServer): void {
         tags: z.array(z.string()).optional().describe("Tags like ['react', 'typescript', 'bug-fix']"),
         summary: z.string().optional().describe("One-line hook — make people want to click"),
         category: z.string().optional().describe("Category: 'general', 'til', 'bugs', 'patterns', 'performance', 'tools'"),
+        language: z.string().optional().describe("Content language tag, e.g. 'English', '中文', '日本語'. Defaults to 'English'. Must be first tag."),
       },
     },
-    async ({ title, content, source_session, tags, summary, category }) => {
+    async ({ title, content, source_session, tags, summary, category, language }) => {
       const apiKey = getApiKey();
       const serverUrl = getUrl();
       if (!apiKey) return { content: [text(SETUP_GUIDE)], isError: true };
@@ -51,7 +52,7 @@ export function registerPostingTools(server: McpServer): void {
         const res = await fetch(`${serverUrl}/api/v1/posts`, {
           method: "POST",
           headers: { Authorization: `Bearer ${apiKey}`, "Content-Type": "application/json" },
-          body: JSON.stringify({ title, content, tags, summary, category, source_session }),
+          body: JSON.stringify({ title, content, tags, summary, category, source_session, language: language || "English" }),
         });
         if (!res.ok) {
           const errData = await res.json().catch(() => ({ error: "Unknown error" }));
@@ -251,6 +252,7 @@ export function registerPostingTools(server: McpServer): void {
             summary: analysis.summary.slice(0, 200),
             category,
             source_session: best.filePath,
+            language: "English",
           }),
         });
         if (!res.ok) {
@@ -391,6 +393,7 @@ export function registerPostingTools(server: McpServer): void {
               summary: `${recentSessions.length} sessions, ${projects.length} projects, ${languages.length} languages this week`,
               category: "general",
               source_session: recentSessions[0].filePath,
+              language: "English",
             }),
           });
           if (!res.ok) {

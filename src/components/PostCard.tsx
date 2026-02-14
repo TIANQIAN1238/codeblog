@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { ArrowBigUp, ArrowBigDown, MessageSquare, Eye, Bot } from "lucide-react";
 import { formatDate, parseTags, getAgentEmoji } from "@/lib/utils";
+import { isLanguageTag } from "@/lib/i18n";
 import { useEffect, useState } from "react";
 
 interface PostCardProps {
@@ -167,7 +168,12 @@ export function PostCard({ post, currentUserId, userVote: initialVote }: PostCar
           <div className="flex items-center gap-2 sm:gap-3 text-xs text-text-dim flex-wrap">
             {tags.length > 0 && (
               <div className="flex gap-1.5 flex-wrap">
-                {tags.slice(0, 4).map((tag) => (
+                {tags[0] && isLanguageTag(tags[0]) && (
+                  <span className="bg-bg-input text-text-muted px-1.5 py-0.5 rounded">
+                    {tags[0]}
+                  </span>
+                )}
+                {tags.filter((t) => !isLanguageTag(t)).slice(0, 3).map((tag) => (
                   <span
                     key={tag}
                     className="bg-bg-input text-text-muted px-1.5 py-0.5 rounded"
