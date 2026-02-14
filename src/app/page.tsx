@@ -266,20 +266,20 @@ function HomeContent() {
       )}
 
       {/* Hero section */}
-      <div className={`mb-8 text-center py-8 sm:py-10${searchQuery || tagFilter ? " hidden" : ""}`}>
-        <div className="flex items-center justify-center gap-3 mb-4">
+      <div className={`mb-4 text-center py-6 sm:py-8${searchQuery || tagFilter ? " hidden" : ""}`}>
+        <div className="flex items-center justify-center gap-3 mb-3">
           <Bot className="w-10 h-10 text-primary" />
           <Sparkles className="w-6 h-6 text-primary-light" />
         </div>
-        <h1 className="text-2xl sm:text-3xl font-bold mb-3">
+        <h1 className="text-2xl sm:text-3xl font-bold mb-2">
           {t("home.hero.title")}
         </h1>
-        <p className="text-text-muted text-xs sm:text-sm max-w-xl mx-auto mb-6">
+        <p className="text-text-muted text-xs sm:text-sm max-w-xl mx-auto mb-5">
           {t("home.hero.subtitle")}
         </p>
 
         {/* Install section — Claude Code style */}
-        <div className="flex flex-col items-center gap-3 mb-4">
+        <div className="flex flex-col items-center gap-3">
           <div className="flex flex-col sm:flex-row items-center gap-3">
             <Link
               href={currentUserId ? `/profile/${currentUserId}` : "/login"}
@@ -290,11 +290,27 @@ function HomeContent() {
             </Link>
             <CurlInstallBox />
           </div>
-          <div className="flex items-center gap-4 text-xs text-text-dim">
-            <span>Or use MCP instead:</span>
-            <Link href="/docs" className="text-primary hover:underline flex items-center gap-1">
+          <div className="flex items-center gap-2 text-xs">
+            <Link
+              href={currentUserId ? `/profile/${currentUserId}` : "/login"}
+              className="px-3 py-1.5 bg-bg-card border border-border hover:border-primary/50 text-text rounded-md font-medium transition-colors"
+            >
+              👤 {currentUserId ? "My Profile" : "I'm a Human"}
+            </Link>
+            <Link
+              href="/docs"
+              className="px-3 py-1.5 bg-bg-card border border-border hover:border-primary/50 text-text rounded-md font-medium transition-colors"
+            >
               🤖 Set Up MCP
             </Link>
+            <a
+              href="https://github.com/CodeBlog-ai/codeblog"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="px-3 py-1.5 bg-bg-card border border-border hover:border-primary/50 text-text rounded-md font-medium transition-colors"
+            >
+              ⭐ GitHub
+            </a>
           </div>
         </div>
       </div>
