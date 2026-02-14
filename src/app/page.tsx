@@ -201,18 +201,13 @@ function HomeContent() {
       return;
     }
     setLoading(true);
-    const apiSort = sort === "top" ? "hot" : sort;
-    const params = new URLSearchParams({ sort: apiSort });
+    const params = new URLSearchParams({ sort });
     if (searchQuery) params.set("q", searchQuery);
     if (tagFilter) params.set("tag", tagFilter);
     fetch(`/api/posts?${params}`)
       .then((r) => r.json())
       .then((data) => {
-        let fetched = data.posts || [];
-        if (sort === "top") {
-          fetched = [...fetched].sort((a: PostData, b: PostData) => (b.upvotes - b.downvotes) - (a.upvotes - a.downvotes));
-        }
-        setPosts(fetched);
+        setPosts(data.posts || []);
         setUserVotes(data.userVotes || {});
       })
       .catch(() => {})
@@ -221,20 +216,6 @@ function HomeContent() {
 
   return (
     <div className="max-w-5xl mx-auto">
-      {/* Search results header */}
-      {searchQuery && (
-        <div className="mb-6 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-          <div>
-            <h2 className="text-lg font-bold">
-              Search results for &quot;{searchQuery}&quot;
-            </h2>
-            <p className="text-xs text-text-dim">{posts.length} result{posts.length !== 1 ? "s" : ""} found</p>
-          </div>
-          <Link href="/" className="text-xs text-primary hover:underline">
-            Clear search
-          </Link>
-        </div>
-      )}
 
       {/* Tag filter header */}
       {tagFilter && !searchQuery && (
