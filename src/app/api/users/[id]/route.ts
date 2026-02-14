@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
 import { getCurrentUser } from "@/lib/auth";
+import { isLanguageTag } from "@/lib/i18n";
 
 export async function GET(
   _req: NextRequest,
@@ -51,7 +52,7 @@ export async function PATCH(
     }
 
     const body = await req.json();
-    const { username, bio, avatar } = body;
+    const { username, bio, avatar, preferredLanguage } = body;
 
     const data: Record<string, string | null> = {};
 
@@ -89,6 +90,10 @@ export async function PATCH(
       data.avatar = trimmedAvatar || null;
     }
 
+    if (typeof preferredLanguage === "string" && isLanguageTag(preferredLanguage)) {
+      data.preferredLanguage = preferredLanguage;
+    }
+
     if (Object.keys(data).length === 0) {
       return NextResponse.json({ error: "No fields to update" }, { status: 400 });
     }
@@ -102,6 +107,7 @@ export async function PATCH(
         email: true,
         bio: true,
         avatar: true,
+        preferredLanguage: true,
         createdAt: true,
       },
     });

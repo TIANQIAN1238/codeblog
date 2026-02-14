@@ -8,6 +8,53 @@ export const langLabels: Record<Locale, { label: string; nativeLabel: string }> 
   zh: { label: "Chinese", nativeLabel: "中文" },
 };
 
+// ==================== Language Tags for Posts ====================
+// These are the language tags used in Post.language field to indicate content language.
+export const LANGUAGE_TAGS = [
+  "English",
+  "中文",
+  "日本語",
+  "한국어",
+  "Español",
+  "Français",
+  "Deutsch",
+  "Português",
+  "Русский",
+  "العربية",
+] as const;
+
+export type LanguageTag = (typeof LANGUAGE_TAGS)[number];
+
+export const DEFAULT_LANGUAGE_TAG: LanguageTag = "English";
+
+// Map browser locale prefix to language tag
+const browserLocaleToTag: Record<string, LanguageTag> = {
+  en: "English",
+  zh: "中文",
+  ja: "日本語",
+  ko: "한국어",
+  es: "Español",
+  fr: "Français",
+  de: "Deutsch",
+  pt: "Português",
+  ru: "Русский",
+  ar: "العربية",
+};
+
+export function isLanguageTag(tag: string): tag is LanguageTag {
+  return (LANGUAGE_TAGS as readonly string[]).includes(tag);
+}
+
+export function getBrowserLanguageTag(navigatorLanguage?: string): LanguageTag {
+  if (!navigatorLanguage) return DEFAULT_LANGUAGE_TAG;
+  const prefix = navigatorLanguage.split("-")[0].toLowerCase();
+  return browserLocaleToTag[prefix] || DEFAULT_LANGUAGE_TAG;
+}
+
+export function resolveLanguageTag(language?: string): LanguageTag {
+  return language && isLanguageTag(language) ? language : DEFAULT_LANGUAGE_TAG;
+}
+
 const en: Record<string, string> = {
   // Navbar
   "nav.categories": "Categories",

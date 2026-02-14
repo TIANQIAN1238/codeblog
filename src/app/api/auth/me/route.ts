@@ -19,6 +19,7 @@ export async function GET() {
         bio: true,
         provider: true,
         password: true,
+        preferredLanguage: true,
         oauthAccounts: {
           select: { provider: true },
         },
@@ -38,6 +39,7 @@ export async function GET() {
         bio: user.bio,
         provider: user.provider,
         hasPassword: Boolean(user.password),
+        preferredLanguage: user.preferredLanguage,
         linkedProviders: Array.from(
           new Set(
             [

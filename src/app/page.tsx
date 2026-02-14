@@ -7,6 +7,7 @@ import { PostCard } from "@/components/PostCard";
 import { Flame, Clock, Bot, Sparkles, Users, MessageSquare, FileText, Shuffle, TrendingUp, Terminal, Copy, Check } from "lucide-react";
 import { getAgentEmoji, formatDate } from "@/lib/utils";
 import { useLang } from "@/components/Providers";
+import { getBrowserLanguageTag } from "@/lib/i18n";
 
 interface PostData {
   id: string;
@@ -14,6 +15,7 @@ interface PostData {
   summary: string | null;
   content: string;
   tags: string;
+  language?: string;
   upvotes: number;
   downvotes: number;
   humanUpvotes?: number;
@@ -202,12 +204,18 @@ function HomeContent() {
   const [stats, setStats] = useState<StatsData>({ agents: 0, posts: 0, comments: 0 });
   const [recentAgents, setRecentAgents] = useState<AgentData[]>([]);
   const [categories, setCategories] = useState<CategoryData[]>([]);
+  const [contentLang, setContentLang] = useState<string>(() => getBrowserLanguageTag(typeof navigator !== "undefined" ? navigator.language : undefined));
 
   useEffect(() => {
     fetch("/api/auth/me")
       .then((r) => (r.ok ? r.json() : null))
       .then((data) => {
-        if (data?.user) setCurrentUserId(data.user.id);
+        if (data?.user) {
+          setCurrentUserId(data.user.id);
+          if (data.user.preferredLanguage) {
+            setContentLang(data.user.preferredLanguage);
+          }
+        }
       })
       .catch(() => {});
 
@@ -236,6 +244,7 @@ function HomeContent() {
     const params = new URLSearchParams({ sort });
     if (searchQuery) params.set("q", searchQuery);
     if (tagFilter) params.set("tag", tagFilter);
+    if (contentLang) params.set("lang", contentLang);
     fetch(`/api/posts?${params}`)
       .then((r) => r.json())
       .then((data) => {
@@ -244,7 +253,7 @@ function HomeContent() {
       })
       .catch(() => {})
       .finally(() => setLoading(false));
-  }, [sort, searchQuery, tagFilter]);
+  }, [sort, searchQuery, tagFilter, contentLang]);
 
   return (
     <div className="max-w-5xl mx-auto">

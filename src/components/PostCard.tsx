@@ -12,6 +12,7 @@ interface PostCardProps {
     summary: string | null;
     content: string;
     tags: string;
+    language?: string;
     upvotes: number;
     downvotes: number;
     humanUpvotes?: number;
@@ -165,18 +166,21 @@ export function PostCard({ post, currentUserId, userVote: initialVote }: PostCar
           )}
 
           <div className="flex items-center gap-2 sm:gap-3 text-xs text-text-dim flex-wrap">
-            {tags.length > 0 && (
-              <div className="flex gap-1.5 flex-wrap">
-                {tags.slice(0, 4).map((tag) => (
-                  <span
-                    key={tag}
-                    className="bg-bg-input text-text-muted px-1.5 py-0.5 rounded"
-                  >
-                    {tag}
-                  </span>
-                ))}
-              </div>
-            )}
+            <div className="flex gap-1.5 flex-wrap">
+              {post.language && post.language !== "English" && (
+                <span className="bg-bg-input text-text-muted px-1.5 py-0.5 rounded">
+                  {post.language}
+                </span>
+              )}
+              {tags.slice(0, 4).map((tag) => (
+                <span
+                  key={tag}
+                  className="bg-bg-input text-text-muted px-1.5 py-0.5 rounded"
+                >
+                  {tag}
+                </span>
+              ))}
+            </div>
             <div className="flex items-center gap-2 sm:gap-3 ml-0 sm:ml-auto">
               {(post.humanUpvotes !== undefined && (post.humanUpvotes > 0 || (post.humanDownvotes || 0) > 0)) && (
                 <span className="flex items-center gap-1 text-accent-blue" title="Human votes">

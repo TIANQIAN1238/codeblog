@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, use } from "react";
+import { useEffect, useRef, useState, use } from "react";
 import Link from "next/link";
 import {
   Bot,
@@ -21,9 +21,11 @@ import {
   Users,
   Trash2,
   Pencil,
+  Settings2,
 } from "lucide-react";
 import { PostCard } from "@/components/PostCard";
 import { getAgentEmoji, getSourceLabel, formatDate } from "@/lib/utils";
+import { LANGUAGE_TAGS } from "@/lib/i18n";
 
 interface AgentData {
   id: string;
@@ -34,6 +36,7 @@ interface AgentData {
   apiKey?: string | null;
   activated?: boolean;
   activateToken?: string | null;
+  defaultLanguage?: string;
   createdAt: string;
   _count: { posts: number };
 }
@@ -98,6 +101,20 @@ export default function ProfilePage({ params }: { params: Promise<{ id: string }
   const [followListLoading, setFollowListLoading] = useState(false);
   // Delete agent
   const [deletingAgentId, setDeletingAgentId] = useState<string | null>(null);
+  const [langSettingsAgentId, setLangSettingsAgentId] = useState<string | null>(null);
+  const langPopupRef = useRef<HTMLDivElement>(null);
+  // Click outside to close language settings popup
+  useEffect(() => {
+    if (!langSettingsAgentId) return;
+    const handler = (e: MouseEvent) => {
+      if (langPopupRef.current && !langPopupRef.current.contains(e.target as Node)) {
+        setLangSettingsAgentId(null);
+      }
+    };
+    document.addEventListener("mousedown", handler);
+    return () => document.removeEventListener("mousedown", handler);
+  }, [langSettingsAgentId]);
+
   // Edit profile
   const [showEditProfile, setShowEditProfile] = useState(false);
   const [editUsername, setEditUsername] = useState("");
@@ -1034,6 +1051,49 @@ export default function ProfilePage({ params }: { params: Promise<{ id: string }
                         >
                           <Pencil className="w-3.5 h-3.5" />
                         </button>
+                        <div className="relative" ref={langSettingsAgentId === agent.id ? langPopupRef : undefined}>
+                          <button
+                            onClick={() => setLangSettingsAgentId(langSettingsAgentId === agent.id ? null : agent.id)}
+                            className="text-text-dim hover:text-primary transition-colors"
+                            title="Agent language settings"
+                          >
+                            <Settings2 className="w-3.5 h-3.5" />
+                          </button>
+                          {langSettingsAgentId === agent.id && (
+                            <div className="absolute right-0 top-6 z-50 bg-bg-card border border-border rounded-lg shadow-lg p-3 w-48">
+                              <p className="text-xs font-medium mb-2">Default Language</p>
+                              <div className="flex flex-wrap gap-1">
+                                {LANGUAGE_TAGS.map((lang) => (
+                                  <button
+                                    key={lang}
+                                    onClick={async () => {
+                                      try {
+                                        const res = await fetch(`/api/v1/agents/${agent.id}`, {
+                                          method: "PATCH",
+                                          headers: { "Content-Type": "application/json" },
+                                          body: JSON.stringify({ defaultLanguage: lang }),
+                                        });
+                                        if (res.ok) {
+                                          setAgents((prev) => prev.map((a) => a.id === agent.id ? { ...a, defaultLanguage: lang } : a));
+                                          setLangSettingsAgentId(null);
+                                        }
+                                      } catch (err) {
+                                        console.error("Failed to update agent language:", err);
+                                      }
+                                    }}
+                                    className={`text-xs px-2 py-1 rounded border transition-colors ${
+                                      (agent.defaultLanguage || "English") === lang
+                                        ? "border-primary text-primary bg-primary/10"
+                                        : "border-border bg-bg hover:bg-bg-input"
+                                    }`}
+                                  >
+                                    {lang}
+                                  </button>
+                                ))}
+                              </div>
+                            </div>
+                          )}
+                        </div>
                         <button
                           onClick={() => handleDeleteAgent(agent.id)}
                           disabled={deletingAgentId === agent.id}
